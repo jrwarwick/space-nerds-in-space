@@ -1,8 +1,8 @@
-/* For the Space Nerds in Space informational website 
+/* For the Space Nerds in Space informational website
 */
 
 body {
-	color:#7fafff; 
+	color:#7fafff;
 	background-color:#000000;
 	font-family:"Helvetica",mono;
 	line-height:1.6;
@@ -22,13 +22,13 @@ h1 {
 	word-spacing:.6em;
 }
 a:link {
-	color:#4050FF; 
+	color:#4050FF;
 }
 a:visited{
-	color:#8A80DF; 
+	color:#8A80DF;
 }
 a:hover{
-	color:#AAAAFF; 
+	color:#AAAAFF;
 }
 
 
@@ -42,7 +42,7 @@ a:hover{
 
 .console {
 	/* old, abandoned green?
-	color:#7fff7f; 
+	color:#7fff7f;
 	*/
 	color: #7fafff;
 	background-color:#0A0A0F;

@@ -13,7 +13,7 @@
 
 <hr/><!-- ------------------------------------ -->
 
-<h2>Instructions for making a bootable image for playing Space Nerds In Space</h2> 
+<h2>Instructions for making a bootable image for playing Space Nerds In Space</h2>
 
 <p><b>Instructions for creating a Live DVD image to run the game</b>
 </p>
@@ -29,7 +29,7 @@
 </ol>
 
 <p>
-	Warning: if this trashes your hard drive, you're on your own.  This procedure 
+	Warning: if this trashes your hard drive, you're on your own.  This procedure
 	worked for me, but you assume all risk and responsibility for the safety of your data. Partially based on instructions found at https://community.linuxmint.com/tutorial/view/1784
 and https://wiki.debian.org/ReduceDebian
 </p>
@@ -44,7 +44,7 @@ and https://wiki.debian.org/ReduceDebian
 		<pre class="console">
 #Optional trimming
 sudo apt-get remove mono-runtime-common gnome-orca cupsys*
-sudo apt-get remove thunderbird* 
+sudo apt-get remove thunderbird*
 sudo apt-get remove libreoffice*
 sudo apt-get remove mint-backgrounds-sarah mint-backgrounds-serena mint-backgrounds-sonya mint-backgrounds-sylvia
 sudo apt-get remove mint-x-icons
@@ -109,13 +109,13 @@ chmod ug+x ~/Desktop/SNIS_Client.desktop
 		</pre>
 <!-- Optional and needs some blessing before fully publishing
 curl -LO https://github.com/jrwarwick/sbs-ui-supplement/archive/master.zip
-unzip -d ~/Games master.zip 
+unzip -d ~/Games master.zip
 rm master.zip
 
-# Create webbrowser bookmark to optional SNIS UI console supplementals (on local disk, in Games dir). 
+# Create webbrowser bookmark to optional SNIS UI console supplementals (on local disk, in Games dir).
 -->
 
-Create webbrowser bookmark and set homepage to SNIS homepage. 
+Create webbrowser bookmark and set homepage to SNIS homepage.
 <!-- Haven't tested this yet, got it from commandlinefu.com
 	sed -i 's|\("browser.startup.homepage",\) "\(.*\)"|\1 "https://smcameron.github.io/space-nerds-in-space/"|' .mozilla/firefox/*.default/prefs.js
 -->
@@ -152,7 +152,7 @@ cd linux-live*
 		</pre>
 	</li>
 	<li>
-		<p>Give your ISO a description (which will be embedded as the name of the CD or USB stick onto which the ISO is burnt) by editing the file named "config". Don't pick too long of a name though because if you do, it won't work. 
+		<p>Give your ISO a description (which will be embedded as the name of the CD or USB stick onto which the ISO is burnt) by editing the file named "config". Don't pick too long of a name though because if you do, it won't work.
 		</p>
 		<pre class="console">
 sed -i 's/^LIVEKITNAME="linux"/LIVEKITNAME="SNISlinux"/' config
@@ -174,7 +174,7 @@ sudo ./build && sudo /tmp/gen_SNISlinux_iso.sh
 		<p>Or:
 		</p>
 		<p>
-		USB Media build: 
+		USB Media build:
 		</p>
 		<p> There was some trouble with the automounting of the USB flash drive (which was formatted with vfat) due to showexec mount option. Apparently the udisks2 automounter used by Linux Mint does not currently have a method for changing the mount options. The bootinst.sh file errored out with this option set. Therefore it is necessary to remount the flash media manually without this option.
 
@@ -189,7 +189,6 @@ mkdir /mnt/usbmedia
 mount -t ${MOUNTLINE[${#MOUNTLINE[@]}-2]} -o $MOUNTOPT ${MOUNTLINE[0]} /mnt/usbmedia
 			</pre>
 		</p>
-		
 			<pre class="console">
 cd /tmp/SNISlinux-data*
 cp -r SNISlinux /mnt/usbmedia/
@@ -239,7 +238,7 @@ umount /mnt/usbmedia
 <p>One other side note: as of Mint 18.3, I found that the install of apparmor was actually blocking dhclient from running and getting an IP address. Somewhere on one of the stackexchange sites I found some instructions to overcome this with some edits in /etc/apparmor.d/.
 </p>
 
-<p>The code is licensed under the GPL v. 2, or at your option, any later version.  Audio files have various other licenses, typically some variant of a Creative Commons license.  
+<p>The code is licensed under the GPL v. 2, or at your option, any later version.  Audio files have various other licenses, typically some variant of a Creative Commons license.
 </p>
 </div>
 </body>

@@ -157,6 +157,9 @@ cd linux-live*
 		<pre class="console">
 sed -i 's/^LIVEKITNAME="linux"/LIVEKITNAME="SNISlinux"/' config
 sudo ./tools/isolinux.bin.update
+curl -LO https://github.com/smcameron/space-nerds-in-space/raw/gh-pages/bootlogo.png
+mv bootlogo.png bootfiles/
+cp bootfiles/bootlogo.png ~/Pictures
 		</pre>
 	</li>
 	<li>Now build filesystem and generate ISO image, which will take a while:

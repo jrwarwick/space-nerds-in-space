@@ -224,6 +224,10 @@ function player_docked_callback(p_oid, s_oid)
 		exotic_materials_loaded(); 
 	elseif s_oid == ds8_starbase then
 		--check contents of cargo bays
+		cargo = get_ship_attribute(player_ids[1], "cargo[0].contents.item");
+		--in list of 3ids xof_mcg neh_mcg nroc_mcg
+		--cargo_name = get_commodity_name(cargo);
+		--cargo_units = get_commodity_units(cargo);
 		    -- else if destinatoin AND ALL exotics on board, unload and declare victory!
 		    -- final_score();
 	end

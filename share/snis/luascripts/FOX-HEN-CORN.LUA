@@ -119,20 +119,22 @@ end
 function exotic_materials_loaded()
 	comms_transmission(erph_starbase, "");
 	--comms_transmission(erph_starbase, " SPECIAL MODIFICATIONS TO CARGO BAYS 0, 1, and 2");
-	comms_transmission(erph_starbase, " AFTER INSPECTION, ALL CARGO BAYS APPEAR TO BE");
-	comms_transmission(erph_starbase, " SUITABLE FOR TRANSPORT OF THESE HIGHLY HAZARDOUS MATERIALS.");
-	comms_transmission(erph_starbase, " POWERED ACTIVE STABILIZATION AND TEMP. CONTROL IS CRUCIAL. ");
-	comms_transmission(erph_starbase, " AS SOON AS THE MATERIALS LEAVE THESE ");
-	comms_transmission(erph_starbase, " SPECIALLY EQUIPPED BAYS, THERE WILL BE");
-	comms_transmission(erph_starbase, " A SAFE PERIOD OF ABOUT TWO MINUTES BEFORE");
-	comms_transmission(erph_starbase, " THEY DESTABILIZE AND EXPLODE! ALL TRANSFERS MUST BE QUICK!");
-	comms_transmission(erph_starbase, " PLEASE NOTE: WHILE ALL BAYS MEET POWER AND TEMP REQUIREMENTS,");
-	comms_transmission(erph_starbase, " ONLY CARGO BAYS 0 AND 1 HAVE SUFFICIENT SHIELDING TO SAFELY");
-	comms_transmission(erph_starbase, " TRANSIT HIGH-ENERGY ENVIRONMENTS SUCH AS NEBULAE.");
-	comms_transmission(erph_starbase, " ALSO NOTE: THE TWO CRYSTALLINE MATERIALS ARE HARMONICALLY");
-	comms_transmission(erph_starbase, " RESONANT WITH EACH OTHER. ");
-	comms_transmission(erph_starbase, " ALSO THE NEHEMISTATIC CRYSTALS ARE HARMONICALLY RESONONANT");
-	comms_transmission(erph_starbase, " WITH THE NROCHIAN CONCENTRATE.");
+	comms_transmission(erph_starbase, " AFTER INSPECTION, ALL CARGO BAYS APPEAR TO BE SUITABLE");
+	comms_transmission(erph_starbase, " FOR TRANSPORT OF THESE HIGHLY HAZARDOUS MATERIALS.");
+	comms_transmission(erph_starbase, " ACTIVE STABILIZATION AND TEMP. CONTROL IS CRUCIAL. ");
+	comms_transmission(erph_starbase, " AS SOON AS THE MATERIALS LEAVE THESE SPECIALLY");
+	comms_transmission(erph_starbase, " EQUIPPED BAYS, THERE WILL BE A SAFE PERIOD OF");
+	comms_transmission(erph_starbase, " TWO MINUTES BEFORE THEY DESTABILIZE AND EXPLODE!");
+	comms_transmission(erph_starbase, " THEREFORE, ALL TRANSFERS MUST BE QUICK!");
+	comms_transmission(erph_starbase, " PLEASE NOTE: WHILE ALL BAYS MEET POWER AND TEMP ");
+	comms_transmission(erph_starbase, " REQUIREMENTS, ONLY CARGO BAYS 0 AND 1 HAVE SUFFICIENT");
+	comms_transmission(erph_starbase, " SHEILDING TO SAFELY TRANSIT HIGH-ENERGY ENVIRONMENTS ");
+	comms_transmission(erph_starbase, " SUCH AS NEBULAE.");
+	comms_transmission(erph_starbase, " ALSO NOTE: ");
+	comms_transmission(erph_starbase, "  - THE TWO CRYSTALLINE MATERIALS ARE HARMONICALLY");
+	comms_transmission(erph_starbase, "    RESONANT WITH EACH OTHER. ");
+	comms_transmission(erph_starbase, "  - ALL NEHEMISTATIC MATERIALS ARE HARMONICALLY RESONONANT");
+	comms_transmission(erph_starbase, "    WITH NROCHIAN MATERIALS.");
 	comms_transmission(erph_starbase, " THIS MEANS THAT IF THEY ARE IN PROXIMITY TO EACH OTHER ");
 	comms_transmission(erph_starbase, " WITHOUT THE BENEFIT OF STABILIZATION AND SHIELDING FROM");
 	comms_transmission(erph_starbase, " EACH OTHER, THEY WILL EXPLODE CATASTROPHICALLY WITHIN");
@@ -148,9 +150,9 @@ function exotic_materials_loaded()
 	comms_transmission(erph_starbase, " LIQUIFIED NROCHIAN CONCENTRATE LOADED AND STABILIZED");
 	comms_transmission(erph_starbase, " READY TO SET OUT CAPTAIN. PLEASE INSTRUCT YOUR CREW");
 	comms_transmission(erph_starbase, " TO KEEP THE TEMPERATURE UNDER 118 DEGREES KELVIN,");
-	comms_transmission(erph_starbase, " ACCELERATIONS BELOW 10m/s/s, AND NO WARP SPEED!");
+	comms_transmission(erph_starbase, " ACCELERATIONS BELOW 120m/s/s, AND NO WARP SPEED!");
 	
-	comms_transmission(erph_starbase, " PLEASE PROCEED, SAFELY, BUT EXPIDITIOUSLY TO DEEPSPACE 8.");
+	comms_transmission(erph_starbase, " PLEASE PROCEED, SAFELY, BUT EXPIDITIOUSLY TO "..get_object_name(ds8_starbase)..".");
 	--give coords right off?
 
 	comms_transmission(erph_starbase, "");

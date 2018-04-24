@@ -54,15 +54,16 @@ nowwhat_starbase = add_starbase(8500, 5500, 2200, 1);
 erph = add_planet("ERPH", erphx, erphy, erphz, 3000);
 erph_starbase = add_starbase(erphx + 500, erphy + 4500, erphz - 1000, 2);
 
-ds8_starbase = add_starbase(erphx + 250000, erphy + 18500, erphz + 1600, 2);
-
 zark = add_planet("ZARK", zarkx, zarky, zarkz, 0); 
 zark_starbase = add_starbase(zarkx + 900, zarky - 1200, zarkz + 1700, 3);
 
 n1 = add_nebula("INSANITY-MAJORIS", x + 5000, y - 100, z - 1500, 5000);
 n2 = add_nebula("INSANITY-MINORIS", x + 500, y - 200, z - 3000, 3000);
 n3 = add_nebula("INSANITY", x + 8000, y - 700, z - 2500, 2000);
+n4 = add_nebula("INSANITY II", x + 18000, y - 700, z - 2000, 2000);
 
+--ds8_starbase = add_starbase(erphx + 250000, erphy + 18500, erphz + 1600, 8);
+ds8_starbase = add_starbase(erphx + 20000, erphy + 18500, erphz + 1600, 8);
 	
 --name, unit, base_price, volatility, legality, econ_sensitivity, govt_sensitivity, tech_sensitivity, odds);
 xof_mcg = add_commodity("TELLURIUM XOFINATE CRYSTALS", "kilograms", "exotic compound", 8000, 0.2, 0.2, 0.2, 0.2, 0.8, 0.0);
@@ -195,7 +196,7 @@ function object_death_callback(oid)
 end
 
 function first_request_delivery_callback(oid)
-    comms_transmission(erph_starbase, player_name .. ", THIS IS DS8, JUST TO LET YOU KNOW, WITHOUT THOSE MATERIALS");
+    comms_transmission(erph_starbase, player_name .. ", THIS IS "..get_object_name(ds8_starbase)..", JUST TO LET YOU KNOW, WITHOUT THOSE MATERIALS");
     comms_transmission(erph_starbase, "OUR CYCLOTRONIC HYPER-REACTOR WILL GO CRITICAL WITHIN TWO HOURS.");
     comms_transmission(erph_starbase, "NO PRESSURE OR ANYTHING, BUT TIME IS OF THE ESSENCE!");
 
@@ -250,7 +251,7 @@ end
 
 
 show_timed_text(player_ids[1], 15,
-    "HAZARDOUS MATERIALS\n" ..
+    "HAZ-MAT TRANSPORT\n" ..
     "\n" ..
     "EXOTIC HAZARDOUS MATERIALS TRANSPORT\n" ..
     "MISSION ORDERS RECEIVED: \n" ..
@@ -259,7 +260,7 @@ show_timed_text(player_ids[1], 15,
     "ASSIST IN THE TRANSPORT OF SOME OF\n" ..
     "THE MOST HAZARDOUS MATERIALS IN THE\n" ..
     "KNOWN GALAXY. THESE RARE MATERIALS\n" ..
-    "ARE NEEDED BY DS8 TO REPLENISH THEIR\n" ..
+    "ARE NEEDED BY "..get_object_name(ds8_starbase).." TO REPLENISH THEIR\n" ..
     "CYCLOTRONIC HYPER-REACTOR. GOOD LUCK.");
  
 --register_timer_callback("add_bad_guys", 100, 0);

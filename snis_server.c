@@ -907,15 +907,15 @@ static void fire_lua_callbacks(struct callback_schedule_entry **sched)
 {
 	struct callback_schedule_entry *i, *next;
 	char *callback;
+	int j;
 
 	for (i = *sched; i != NULL; i = next) {
 		next = next_scheduled_callback(i);
 		callback = callback_name(i);
 		lua_getglobal(lua_state, callback);
-		lua_pushnumber(lua_state, callback_schedule_entry_param(i, 0));
-		lua_pushnumber(lua_state, callback_schedule_entry_param(i, 1));
-		lua_pushnumber(lua_state, callback_schedule_entry_param(i, 2));
-		do_lua_pcall(callback, lua_state, 3, 0, 0);
+		for (j = 0; j < MAX_LUA_CALLBACK_PARAMS; j++)
+			lua_pushnumber(lua_state, callback_schedule_entry_param(i, j));
+		do_lua_pcall(callback, lua_state, MAX_LUA_CALLBACK_PARAMS, 0, 0);
 		free(callback);
 	}
 	free_callback_schedule(sched);
@@ -1396,6 +1396,7 @@ static void wormhole_collision_detection(void *wormhole, void *object)
 {
 	struct snis_entity *t, *o;
 	double dist2, a, r;
+	double x1, y1, z1, warp_dist, equiv_warp_factor;
 
 	o = wormhole;
 	t = object;
@@ -1413,12 +1414,21 @@ static void wormhole_collision_detection(void *wormhole, void *object)
 		if (dist2 < 30.0 * 30.0) {
 			a = snis_randn(360) * M_PI / 180.0;
 			r = 60.0;
+			x1 = o->x;
+			y1 = o->y;
+			z1 = o->z;
 			set_object_location(t, o->tsd.wormhole.dest_x + cos(a) * r, 
 						o->tsd.wormhole.dest_y,
 						o->tsd.wormhole.dest_z + sin(a) * r);
 			t->timestamp = universe_timestamp;
-			if (t->type == OBJTYPE_SHIP1)
+			if (t->type == OBJTYPE_SHIP1) {
+				warp_dist = hypot3d(o->x - x1, o->y - y1, o->z - z1);
+				equiv_warp_factor = 10.0 * warp_dist / (XKNOWN_DIM / 2.0);
+				schedule_callback8(event_callback, &callback_schedule,
+					"player-wormhole-travel-event", (double) o->id,
+					x1, y1, z1, o->x, o->y, o->z, equiv_warp_factor);
 				send_wormhole_limbo_packet(t->id, 5 * 30);
+			}
 		}
 	}
 }
@@ -5181,6 +5191,7 @@ static void ai_mining_mode_approach_asteroid(struct snis_entity *o, struct ai_mi
 	float threshold;
 	double x, y, z, vx, vy, vz;
 	float my_speed = dist3d(o->vx, o->vy, o->vz);
+	float time_to_travel = 0.0;
 	int b;
 
 	if (ai->object_or_waypoint == 0) /* destination is object */ {
@@ -5211,7 +5222,7 @@ static void ai_mining_mode_approach_asteroid(struct snis_entity *o, struct ai_mi
 			threshold = 2.0 * estimate_asteroid_radius(asteroid->id);
 			break;
 		default:
-			threshold = 100.0;
+			threshold = 200.0;
 			break;
 		}
 	} else { /* destination is waypoint */
@@ -5229,12 +5240,15 @@ static void ai_mining_mode_approach_asteroid(struct snis_entity *o, struct ai_mi
 		o->tsd.ship.doy = y;
 		o->tsd.ship.doz = z;
 	} else {
-		float time_to_travel = distance / my_speed;
+		time_to_travel = distance / my_speed;
 		o->tsd.ship.dox = x + vx * time_to_travel;
 		o->tsd.ship.doy = y + vy * time_to_travel;
 		o->tsd.ship.doz = z + vz * time_to_travel;
 	}
-	double dist2 = ai_ship_travel_towards(o, x, y, z);
+	double dist2 = ai_ship_travel_towards(o, x + vx * time_to_travel,
+						y + vy * time_to_travel,
+						z + vz * time_to_travel);
+	dist2 = object_dist2(o, asteroid);
 	if (dist2 < threshold * threshold) {
 		b = lookup_bridge_by_shipid(ai->parent_ship);
 		if (b >= 0) {
@@ -5308,8 +5322,11 @@ static void ai_mining_mode_land_on_asteroid(struct snis_entity *o, struct ai_min
 		return;
 	}
 	asteroid = &go[i];
-	radius = estimate_asteroid_radius(asteroid->id) *
-			(1.0 - 0.2 * ai->countdown / 200.0);
+	if (go[i].type == OBJTYPE_ASTEROID)
+		radius = estimate_asteroid_radius(asteroid->id) *
+				(1.0 - 0.2 * ai->countdown / 200.0);
+	else
+		radius = 180.0;
 	vec3_mul_self(&offset, radius);
 	n = o->tsd.ship.nai_entries - 1;
 	quat_rot_vec_self(&offset, &o->tsd.ship.ai[n].u.mining_bot.orbital_orientation);
@@ -7515,6 +7532,25 @@ static int starbase_grant_docker_permission(struct snis_entity *starbase,
 	return 0;
 }
 
+static int ship_is_docked(uint32_t ship_id, struct snis_entity *starbase)
+{
+	int i;
+	int model = starbase->id % nstarbase_models;
+
+	for (i = 0; i < docking_port_info[model]->nports; i++) {
+		struct snis_entity *docking_port;
+		int dpi = lookup_by_id(starbase->tsd.starbase.docking_port[i]);
+		if (dpi < 0)
+			continue;
+		docking_port = &go[dpi];
+		if (docking_port->tsd.docking_port.docked_guy == ship_id) {
+			return 1;
+			break;
+		}
+	}
+	return 0;
+}
+
 static int starbase_expecting_docker(struct snis_entity *starbase, uint32_t docker)
 {
 	int model = starbase->id % nstarbase_models;
@@ -7536,7 +7572,19 @@ static void do_docking_action(struct snis_entity *ship, struct snis_entity *star
 	float charges;
 	int channel = b->npcbot.channel;
 
-	snprintf(msg, sizeof(msg), "%s, WELCOME TO OUR STARBASE, ENJOY YOUR STAY.", b->shipname);
+	if (enemy_faction(ship->sdata.faction, starbase->sdata.faction)) {
+		snprintf(msg, sizeof(msg), "DEPART IMMEDIATELY %s! YOU ARE A SWORN ENEMY OF THE %s.",
+			b->shipname, faction_name(starbase->sdata.faction));
+	} else {
+		if (starbase->sdata.faction == 0) {  /* Neutral */
+			snprintf(msg, sizeof(msg), "%s, PERMISSION GRANTED TO ENTER THIS STARBASE. WELCOME.",
+				b->shipname);
+		} else {
+			snprintf(msg, sizeof(msg), "%s, WELCOME TO OUR STARBASE, ENJOY YOUR STAY.", b->shipname);
+		}
+		send_comms_packet(starbase, npcname, channel, msg);
+		snprintf(msg, sizeof(msg), "CONTINUOUS AIR SUPPLY ESTABLISH THROUGH DOCKING PORT AIRLOCK.");
+	}
 	send_comms_packet(starbase, npcname, channel, msg);
 	/* TODO make the repair/refuel process a bit less easy */
 	snprintf(msg, sizeof(msg), "%s, YOUR SHIP HAS BEEN REPAIRED AND REFUELED.\n",
@@ -8374,6 +8422,10 @@ static void maybe_do_player_warp(struct snis_entity *o)
 				bridgelist[b].warpx,
 				bridgelist[b].warpy,
 				bridgelist[b].warpz);
+		/* At this point, warp[xyz] holds coordinates we are warping FROM */
+		bridgelist[b].warpx = o->x;
+		bridgelist[b].warpy = o->y;
+		bridgelist[b].warpz = o->z;
 	}
 
 	if (bridgelist[b].warptimeleft <= 0)
@@ -8387,9 +8439,19 @@ static void maybe_do_player_warp(struct snis_entity *o)
 	o->timestamp = universe_timestamp;
 	bridgelist[b].warptimeleft--;
 	if (bridgelist[b].warptimeleft == 0) {
+		double dist_travelled = hypot3d(bridgelist[b].warpx - o->x,
+						bridgelist[b].warpy - o->y,
+						bridgelist[b].warpz - o->z);
+		double warp_factor = 10.0 * dist_travelled / (XKNOWN_DIM / 2.0);
 		o->vx = 0;
 		o->vy = 0;
 		o->vz = 0;
+		schedule_callback8(event_callback, &callback_schedule,
+				"player-warp-travel-event", (double) o->id,
+					bridgelist[b].warpx,
+					bridgelist[b].warpy,
+					bridgelist[b].warpz,
+					o->x, o->y, o->z, warp_factor);
 	}
 }
 
@@ -8542,6 +8604,13 @@ static void player_move(struct snis_entity *o)
 	/* Generate oxygen */
 	uint32_t new_oxygen = (uint32_t) (OXYGEN_PRODUCTION_UNIT *
 				o->tsd.ship.power_data.lifesupport.i / 255.0);
+	/* Acquire oxygen from friendly starbase when docked */
+	for (i = 0; i <= snis_object_pool_highest_object(pool); i++) {
+		if (go[i].type == OBJTYPE_STARBASE && ship_is_docked(o->id, &go[i])
+				&& !enemy_faction(o->sdata.faction, go[i].sdata.faction)) {
+			new_oxygen += OXYGEN_CONSUMPTION_UNIT * 1.5;
+		}
+	}
 	if (o->tsd.ship.oxygen < UINT32_MAX - new_oxygen)
 		o->tsd.ship.oxygen += new_oxygen;
 	else
@@ -14079,25 +14148,6 @@ static void npc_menu_item_mining_bot_status_report(struct npc_menu_item *item,
 	send_comms_packet(miner, npcname, channel, "--- END STATUS REPORT ---");
 }
 
-static int ship_is_docked(uint32_t ship_id, struct snis_entity *starbase)
-{
-	int i;
-	int model = starbase->id % nstarbase_models;
-
-	for (i = 0; i < docking_port_info[model]->nports; i++) {
-		struct snis_entity *docking_port;
-		int dpi = lookup_by_id(starbase->tsd.starbase.docking_port[i]);
-		if (dpi < 0)
-			continue;
-		docking_port = &go[dpi];
-		if (docking_port->tsd.docking_port.docked_guy == ship_id) {
-			return 1;
-			break;
-		}
-	}
-	return 0;
-}
-
 static void npc_menu_item_buy_cargo(struct npc_menu_item *item,
 					char *npcname, struct npc_bot_state *botstate)
 {
@@ -15343,7 +15393,7 @@ static int process_textscreen_op(struct game_client *c)
 	switch (subcommand) {
 	case OPCODE_TEXTSCREEN_MENU_CHOICE:
 		schedule_one_callback(&callback_schedule, current_user_menu_callback,
-			(double) c->shipid, (double) selection, 0.0, 0.0, 0.0, 0.0);
+			(double) c->shipid, (double) selection, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 		break;
 	default:
 		return -1;
@@ -17925,6 +17975,7 @@ static int do_engage_warp_drive(struct snis_entity *o)
 	if (enough_oomph) {
 		wfactor = ((double) o->tsd.ship.warpdrive / 255.0) * (XKNOWN_DIM / 2.0);
 		quat_rot_vec(&warpvec, &rightvec, &o->orientation);
+		/* At this point, warp[xyz] holds coordinates we are warping TO */
 		bridgelist[b].warpx = o->x + wfactor * warpvec.v.x;
 		bridgelist[b].warpy = o->y + wfactor * warpvec.v.y;
 		bridgelist[b].warpz = o->z + wfactor * warpvec.v.z;
@@ -19856,10 +19907,12 @@ static void send_update_asteroid_packet(struct game_client *c,
 static void send_update_cargo_container_packet(struct game_client *c,
 	struct snis_entity *o)
 {
-	pb_queue_to_client(c, snis_opcode_pkt("bwwSSS", OPCODE_UPDATE_CARGO_CONTAINER, o->id, o->timestamp,
+	pb_queue_to_client(c, snis_opcode_pkt("bwwSSSwS", OPCODE_UPDATE_CARGO_CONTAINER, o->id, o->timestamp,
 					o->x, (int32_t) UNIVERSE_DIM,
 					o->y, (int32_t) UNIVERSE_DIM,
-					o->z, (int32_t) UNIVERSE_DIM));
+					o->z, (int32_t) UNIVERSE_DIM,
+					(uint32_t) o->tsd.cargo_container.contents.item,
+					o->tsd.cargo_container.contents.qty, (int32_t) 1000000));
 }
 
 static void send_update_derelict_packet(struct game_client *c,
@@ -21974,6 +22027,164 @@ no_understand:
 	queue_add_text_to_speech(c, "Sorry, I do not understand which direction you want to turn.");
 }
 
+/* lights on/off/out */
+static void nl_lights_p(void *context, int argc, char *argv[], int pos[],
+			union snis_nl_extra_data extra_data[])
+{
+	struct game_client *c = context;
+	int i, prep;
+	uint8_t current_lights;
+	prep = nl_find_next_word(argc, pos, POS_PREPOSITION, 0);
+	if (prep < 0)
+		goto no_understand;
+
+	pthread_mutex_lock(&universe_mutex);
+	i = lookup_by_id(c->shipid);
+	if (i < 0) {
+		pthread_mutex_unlock(&universe_mutex);
+		return;
+	}
+	current_lights = go[i].tsd.ship.exterior_lights;
+	pthread_mutex_unlock(&universe_mutex);
+	if (strcasecmp(argv[prep], "on") == 0 || strcasecmp(argv[prep], "up") == 0) {
+		if (current_lights) {
+			queue_add_text_to_speech(c, "The exterior lights are already on.");
+		} else {
+			queue_add_text_to_speech(c, "Turning exterior lights on.");
+			process_adjust_control_bytevalue(c, c->shipid,
+				offsetof(struct snis_entity, tsd.ship.exterior_lights), 1, no_limit);
+		}
+	} else if (strcasecmp(argv[prep], "off") == 0 || strcasecmp(argv[prep], "out") == 0 ||
+			strcasecmp(argv[prep], "down") == 0) {
+		if (!current_lights) {
+			queue_add_text_to_speech(c, "The exterior lights are already off.");
+		} else {
+			queue_add_text_to_speech(c, "Turning exterior lights off.");
+			process_adjust_control_bytevalue(c, c->shipid,
+				offsetof(struct snis_entity, tsd.ship.exterior_lights), 0, no_limit);
+		}
+	} else {
+		goto no_understand;
+	}
+	return;
+
+no_understand:
+	queue_add_text_to_speech(c, "Sorry, I do not understand which direction you want to turn.");
+}
+
+/* Eg: "turn/shut on/off/out lights" */
+static void nl_turn_pn_or_np(void *context, int argc, char *argv[], int pos[],
+			union snis_nl_extra_data extra_data[], int np)
+{
+	struct game_client *c = context;
+	int i, prep, noun, value;
+	uint8_t current_lights, current_docking;
+	uint32_t current_tractor;
+	char buffer[100];
+
+	if (!np) { /* pn */
+		prep = nl_find_next_word(argc, pos, POS_PREPOSITION, 0);
+		if (prep < 0)
+			goto no_understand;
+		noun = nl_find_next_word(argc, pos, POS_NOUN, prep + 1);
+		if (noun < 0)
+			goto no_understand;
+	} else { /* np */
+		noun = nl_find_next_word(argc, pos, POS_NOUN, 0);
+		if (noun < 0)
+			goto no_understand;
+		prep = nl_find_next_word(argc, pos, POS_PREPOSITION, noun + 1);
+		if (prep < 0)
+			goto no_understand;
+	}
+	if (strcasecmp(argv[prep], "on") == 0 || strcasecmp(argv[prep], "up") == 0)
+		value = 1;
+	else if (strcasecmp(argv[prep], "off") == 0 || strcasecmp(argv[prep], "out") == 0 ||
+			strcasecmp(argv[prep], "down") == 0)
+		value = 0;
+	else
+		goto no_understand;
+	pthread_mutex_lock(&universe_mutex);
+	i = lookup_by_id(c->shipid);
+	if (i < 0) {
+		pthread_mutex_unlock(&universe_mutex);
+		return;
+	}
+	current_lights = go[i].tsd.ship.exterior_lights;
+	current_docking = go[i].tsd.ship.docking_magnets = 0;
+	current_tractor = go[i].tsd.ship.tractor_beam;
+	pthread_mutex_unlock(&universe_mutex);
+
+	if (strcasecmp(argv[noun], "lights") == 0) {
+		if (current_lights == value * 255) {
+			snprintf(buffer, sizeof(buffer), "The exterior lights are already %s.",
+				value ? "on" : "off");
+			queue_add_text_to_speech(c, buffer);
+			return;
+		}
+		snprintf(buffer, sizeof(buffer), "Turning exterior lights %s.", value ? "on" : "off");
+		queue_add_text_to_speech(c, buffer);
+		process_adjust_control_bytevalue(c, c->shipid,
+			offsetof(struct snis_entity, tsd.ship.exterior_lights), value * 255, no_limit);
+		return;
+	} else if (strcasecmp(argv[noun], "docking system") == 0) {
+		if (value == current_docking) {
+			snprintf(buffer, sizeof(buffer), "The docking system is already %s.",
+				value ? "engaged" : "disengaged");
+			queue_add_text_to_speech(c, buffer);
+			return;
+		}
+		snprintf(buffer, sizeof(buffer), "%s docking system.",
+			current_docking ? "Disengaging" : "Engaging");
+		queue_add_text_to_speech(c, buffer);
+		process_adjust_control_bytevalue(c, c->shipid,
+			offsetof(struct snis_entity, tsd.ship.docking_magnets), value, no_limit);
+	} else if (strcasecmp(argv[noun], "tractor beam") == 0) {
+		if (value == 1) {
+			if (current_tractor != 0xffffffff) {
+				queue_add_text_to_speech(c, "The tractor beam is already engaged.");
+				return;
+			}
+			turn_on_tractor_beam(c, &go[i], 0xffffffff, 0); /* TODO: fix raciness. */
+			return;
+		} else {
+			if (current_tractor == 0xffffffff) {
+				queue_add_text_to_speech(c, "The tractor beam is already disengaged.");
+				return;
+			}
+			pthread_mutex_lock(&universe_mutex);
+			i = lookup_by_id(c->shipid);
+			if (i < 0) {
+				pthread_mutex_unlock(&universe_mutex);
+				return;
+			}
+			turn_off_tractorbeam(&go[i]);
+			pthread_mutex_unlock(&universe_mutex);
+			queue_add_text_to_speech(c, "Tractor beam disengaged.");
+		}
+	} else if (strcasecmp(argv[noun], "red alert") == 0) {
+		set_red_alert_mode(c, value);
+	}
+	return;
+
+no_understand:
+	queue_add_text_to_speech(c, "Sorry, I do not understand which direction you want to turn.");
+}
+
+/* Eg: "turn/shut on/off/out lights" */
+static void nl_turn_pn(void *context, int argc, char *argv[], int pos[],
+			union snis_nl_extra_data extra_data[])
+{
+	nl_turn_pn_or_np(context, argc, argv, pos, extra_data, 0);
+}
+
+/* Eg: "turn/shut lights on/off/out" */
+static void nl_turn_np(void *context, int argc, char *argv[], int pos[],
+			union snis_nl_extra_data extra_data[])
+{
+	nl_turn_pn_or_np(context, argc, argv, pos, extra_data, 1);
+}
+
 /* Eg: "turn right 90 degrees" */
 static void nl_turn_aqa(void *context, int argc, char *argv[], int pos[],
 				union snis_nl_extra_data extra_data[])
@@ -22788,7 +22999,10 @@ no_understand:
 	return;
 }
 
-/* increase power to impulse, increase coolant to blah, raise shields to maximum */
+/* increase power to impulse, increase coolant to blah, raise shields to maximum.
+ * "raise" value of 0 means decrease, 1 means increase, 2 means set, used only in
+ * figuring maximum/minimum and in reply construction.
+ */
 static void nl_raise_or_lower_npa(void *context, int argc, char *argv[], int pos[],
 		union snis_nl_extra_data extra_data[], int raise)
 {
@@ -22796,6 +23010,17 @@ static void nl_raise_or_lower_npa(void *context, int argc, char *argv[], int pos
 	nl_set_function setit = NULL;
 	char answer[100];
 	int i, noun, prep, adj;
+	char *active_verb;
+
+	switch (raise) {
+	case 0: active_verb = "increase";
+		break;
+	case 1: active_verb = "decrease";
+		break;
+	default:
+	case 2: active_verb = "set";
+		break;
+	}
 
 	noun = nl_find_next_word(argc, pos, POS_NOUN, 0);
 	if (noun < 0)
@@ -22814,15 +23039,15 @@ static void nl_raise_or_lower_npa(void *context, int argc, char *argv[], int pos
 		}
 	}
 	if (setit) {
-		if (raise && strcasecmp(argv[adj], "maximum") == 0) {
+		if ((raise == 1  || raise == 2) && strcasecmp(argv[adj], "maximum") == 0) {
 			setit(c, argv[noun], 1.0);
 			return;
 		}
-		if (!raise && strcasecmp(argv[adj], "minimum") == 0) {
+		if ((raise == 0 || raise == 2) && strcasecmp(argv[adj], "minimum") == 0) {
 			setit(c, argv[noun], 0.0);
 			return;
 		}
-		sprintf(answer, "I don't know how to %s %s %s %s\n", raise ? "increase" : "decrease",
+		sprintf(answer, "I don't know how to %s %s %s %s\n", active_verb,
 				argv[noun], argv[prep], argv[adj]);
 		queue_add_text_to_speech(c, answer);
 		return;
@@ -22838,7 +23063,7 @@ static void nl_raise_or_lower_npa(void *context, int argc, char *argv[], int pos
 			queue_add_text_to_speech(c, answer);
 			return;
 		}
-		setit(c, argv[adj], raise ? 1.0 : 0.0);
+		setit(c, argv[adj], (raise == 0) ? 0.0 : 1.0);
 		return;
 	} else if (strcasecmp(argv[noun], "coolant") == 0) {
 		for (i = 0; i < ARRAYSIZE(nl_settable_coolant_thing); i++) {
@@ -22848,11 +23073,11 @@ static void nl_raise_or_lower_npa(void *context, int argc, char *argv[], int pos
 			}
 		}
 		if (!setit) {
-			sprintf(answer, "I don't know how to decrease power to that.\n");
+			sprintf(answer, "I don't know how to %s power to that.\n", active_verb);
 			queue_add_text_to_speech(c, answer);
 			return;
 		}
-		setit(c, argv[adj], raise ? 1.0 : 0.0);
+		setit(c, argv[adj], (raise == 0) ? 0.0 : 1.0);
 		return;
 	}
 no_understand:
@@ -22869,6 +23094,12 @@ static void nl_lower_npa(void *context, int argc, char *argv[], int pos[],
 		union snis_nl_extra_data extra_data[])
 {
 	nl_raise_or_lower_npa(context, argc, argv, pos, extra_data, 0);
+}
+
+static void nl_set_npa(void *context, int argc, char *argv[], int pos[],
+		union snis_nl_extra_data extra_data[])
+{
+	nl_raise_or_lower_npa(context, argc, argv, pos, extra_data, 2);
 }
 
 /* "raise shields" */
@@ -23983,7 +24214,7 @@ static void init_dictionary(void)
 	snis_nl_add_dictionary_verb("navigate",		"navigate",	"pnq", nl_navigate_pnq);
 	snis_nl_add_dictionary_verb("head",		"navigate",	"pnq", nl_navigate_pnq);
 	snis_nl_add_dictionary_verb("set",		"set",		"npq", nl_set_npq); /* set warp drive to 50 percent */
-	snis_nl_add_dictionary_verb("set",		"set",		"npa", sorry_dave);
+	snis_nl_add_dictionary_verb("set",		"set",		"npa", nl_set_npa);
 	snis_nl_add_dictionary_verb("set",		"set",		"npn", nl_set_npn);
 	snis_nl_add_dictionary_verb("set",		"set",		"npan", nl_set_npn); /* set a course for the nearest planet */
 	snis_nl_add_dictionary_verb("set",		"set",		"npnq", nl_set_npnq); /* set a course for starbase one */
@@ -24016,7 +24247,10 @@ static void init_dictionary(void)
 	snis_nl_add_dictionary_verb("enter",		"enter",	"an", nl_enter_an); /* enter standard orbit */
 	snis_nl_add_dictionary_verb("disengage",	"disengage",	"n", nl_disengage_n);
 	snis_nl_add_dictionary_verb("stop",		"disengage",	"n", nl_disengage_n);
-	snis_nl_add_dictionary_verb("turn",		"turn",		"pn", sorry_dave);
+	snis_nl_add_dictionary_verb("turn",		"turn",		"pn", nl_turn_pn); /* turn on lights */
+	snis_nl_add_dictionary_verb("turn",		"turn",		"np", nl_turn_np); /* turn lights on */
+	snis_nl_add_dictionary_verb("shut",		"shut",		"pn", nl_turn_pn); /* shut off lights */
+	snis_nl_add_dictionary_verb("shut",		"shut",		"np", nl_turn_np); /* shut lights off */
 	snis_nl_add_dictionary_verb("turn",		"turn",		"aqa", nl_turn_aqa);
 	snis_nl_add_dictionary_verb("rotate",		"rotate",	"aqa", nl_turn_aqa);
 	snis_nl_add_dictionary_verb("turn",		"turn",		"qaa", nl_turn_qaa);
@@ -24039,8 +24273,6 @@ static void init_dictionary(void)
 	snis_nl_add_dictionary_verb("zoom",		"zoom",		"q", nl_zoom_q);
 	snis_nl_add_dictionary_verb("zoom",		"zoom",		"p", sorry_dave);
 	snis_nl_add_dictionary_verb("zoom",		"zoom",		"pq", nl_zoom_pq);
-	snis_nl_add_dictionary_verb("shut",		"shut",		"an", sorry_dave);
-	snis_nl_add_dictionary_verb("shut",		"shut",		"na", sorry_dave);
 	snis_nl_add_dictionary_verb("launch",		"launch",	"n", nl_launch_n);
 	snis_nl_add_dictionary_verb("eject",		"eject",	"n", sorry_dave);
 	snis_nl_add_dictionary_verb("full",		"full",		"a", nl_full_n),    /* full impulse */
@@ -24093,6 +24325,8 @@ static void init_dictionary(void)
 	snis_nl_add_dictionary_verb("european",		"european",		"", nl_african_or_european);
 		/* do we have enough fuel */
 	snis_nl_add_dictionary_verb("do",		"do",			"Pxan", nl_do_Pxan);
+		/* lights on/off/out */
+	snis_nl_add_dictionary_verb("lights",		"lights",		"p",	nl_lights_p);
 
 	snis_nl_add_dictionary_word("drive",		"drive",	POS_NOUN);
 	snis_nl_add_dictionary_word("system",		"system",	POS_NOUN);
@@ -24189,6 +24423,7 @@ static void init_dictionary(void)
 	snis_nl_add_dictionary_word("waypoint",		"waypoint",	POS_NOUN);
 	snis_nl_add_dictionary_word("blackhole",	"blackhole",	POS_NOUN);
 	snis_nl_add_dictionary_word("spacemonster",	"spacemonster",	POS_NOUN);
+	snis_nl_add_dictionary_word("lights",		"lights",	POS_NOUN);
 
 	snis_nl_add_dictionary_word("a",		"a",		POS_ARTICLE);
 	snis_nl_add_dictionary_word("an",		"an",		POS_ARTICLE);
@@ -24302,6 +24537,8 @@ static void init_dictionary(void)
 	snis_nl_add_dictionary_word("much",		"much",		POS_ADJECTIVE);
 	snis_nl_add_dictionary_word("enough",		"enough",	POS_ADJECTIVE);
 	snis_nl_add_dictionary_word("sufficient",	"enough",	POS_ADJECTIVE);
+	snis_nl_add_dictionary_word("exterior",		"exterior",	POS_ADJECTIVE);
+	snis_nl_add_dictionary_word("external",		"external",	POS_ADJECTIVE);
 
 	snis_nl_add_dictionary_word("percent",		"percent",	POS_ADVERB);
 	snis_nl_add_dictionary_word("quickly",		"quickly",	POS_ADVERB);

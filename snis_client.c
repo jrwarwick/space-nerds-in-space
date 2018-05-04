@@ -408,7 +408,6 @@ static struct mesh **ship_mesh_map;
 static struct mesh **derelict_mesh;
 
 #define NNEBULA_MATERIALS 20
-static struct material thrust_flare_material;
 static struct material nebula_material[NNEBULA_MATERIALS];
 static struct material red_torpedo_material;
 static struct material red_laser_material;
@@ -457,6 +456,7 @@ static struct material asteroid_material[NASTEROID_TEXTURES];
 static struct material wormhole_material;
 #define NTHRUSTMATERIALS 5
 static struct material thrust_material[NTHRUSTMATERIALS];
+static struct material thrust_flare_material[NTHRUSTMATERIALS];
 static struct material atmosphere_material;
 static struct material block_material;
 static struct material small_block_material;
@@ -1833,7 +1833,8 @@ static int update_warp_core(uint32_t id, uint32_t timestamp, double x, double y,
 	return 0;
 }
 
-static int update_cargo_container(uint32_t id, uint32_t timestamp, double x, double y, double z)
+static int update_cargo_container(uint32_t id, uint32_t timestamp, double x, double y, double z,
+		uint32_t item, double qty)
 {
 	int i;
 	struct entity *e;
@@ -1853,6 +1854,8 @@ static int update_cargo_container(uint32_t id, uint32_t timestamp, double x, dou
 			return i;
 		o = &go[i];
 		o->tsd.cargo_container.rotational_velocity = random_spin[id % NRANDOM_SPINS];
+		o->tsd.cargo_container.contents.item = item;
+		o->tsd.cargo_container.contents.qty = qty;
 	} else {
 		double vx, vy, vz;
 
@@ -1860,6 +1863,8 @@ static int update_cargo_container(uint32_t id, uint32_t timestamp, double x, dou
 		vy = y - go[i].y;
 		vz = z - go[i].z;
 		update_generic_object(i, timestamp, x, y, z, vx, vy, vz, NULL, 1);
+		go[i].tsd.cargo_container.contents.item = item;
+		go[i].tsd.cargo_container.contents.qty = qty;
 	}
 	return 0;
 }
@@ -6336,19 +6341,20 @@ static int process_update_warp_core_packet(void)
 static int process_update_cargo_container_packet(void)
 {
 	unsigned char buffer[100];
-	uint32_t id, timestamp;
-	double dx, dy, dz;
+	uint32_t id, timestamp, item;
+	double dx, dy, dz, qty;
 	int rc;
 
 	assert(sizeof(buffer) > sizeof(struct update_cargo_container_packet) - sizeof(uint8_t));
-	rc = read_and_unpack_buffer(buffer, "wwSSS", &id, &timestamp,
+	rc = read_and_unpack_buffer(buffer, "wwSSSwS", &id, &timestamp,
 			&dx, (int32_t) UNIVERSE_DIM,
 			&dy,(int32_t) UNIVERSE_DIM,
-			&dz, (int32_t) UNIVERSE_DIM);
+			&dz, (int32_t) UNIVERSE_DIM,
+			&item, &qty, (int32_t) 1000000);
 	if (rc != 0)
 		return rc;
 	pthread_mutex_lock(&universe_mutex);
-	rc = update_cargo_container(id, timestamp, dx, dy, dz);
+	rc = update_cargo_container(id, timestamp, dx, dy, dz, item, qty);
 	pthread_mutex_unlock(&universe_mutex);
 	return (rc < 0);
 } 
@@ -7368,6 +7374,7 @@ static char *credits_text[] = {
 	"*   *   *",
 	"",
 	"HTTPS://SMCAMERON.GITHUB.IO/SPACE-NERDS-IN-SPACE/",
+	"HTTPS://WWW.PATREON.COM/user?u=9573826",
 	"",
 	"CREATED BY",
 	"STEPHEN M. CAMERON",
@@ -7392,22 +7399,30 @@ static char *credits_text[] = {
 	"",
 	"OTHER CONTRIBUTORS",
 	"",
-	"ANDY CONRAD",
+	"ANDY CONRAD (HER001)",
 	"ANTHONY J. BENTLEY",
 	"CHRISTIAN ROBERTS",
-	"DUSTEDDK",
+	"JIMMY (DUSTEDDK)",
 	"EMMANOUEL KAPERNAROS",
-	"HER0_01",
 	"IOAN LOOSLEY",
 	"IVAN SANCHEZ ORTEGA",
+	"JUSTIN WARWICK",
+	"KYLE ROBBERTZE",
 	"LUCKI",
-	"MIKEYD",
+	"MICHAEL ALDRIDGE",
+	"MICHAEL T DEGUZIS",
 	"REMI VERSCHELDE",
 	"SCOTT BENESH",
 	"STEFAN GUSTAVSON",
 	"THOMAS GLAMSCH",
 	"TOBIAS SIMON",
 	"ZACHARY SCHULTZ",
+	"",
+	"SPECIAL THANKS TO THE FOLLOWING PATRONS",
+	"OF SPACE NERDS IN SPACE",
+	"",
+	"ALEC SLOMAN",
+	"BILLY",
 	"",
 	"*   *   *",
 	"",
@@ -7794,7 +7809,7 @@ static void add_ship_thrust_entities(struct entity *thrust_entity[],
 			(*nthrust_ports)++;
 		}
 		if (t) {
-			update_entity_material(t, &thrust_flare_material);
+			update_entity_material(t, &thrust_flare_material[thrust_material_index]);
 			update_entity_orientation(t, &identity_quat);
 			update_entity_scale(t, THRUST_FLARE_SCALE * thrust_size * ap->port[p].scale);
 			update_entity_parent(cx, t, e);
@@ -13832,6 +13847,7 @@ static void science_button_release(int button, int x, int y)
 	int xdist, ydist, dist2, mindist;
 	struct snis_entity *selected;
 	int waypoint_selected = -1;
+	int near_enough_to_fail = 0;
 
 	x = sng_pixelx_to_screenx(x);
 	y = sng_pixely_to_screeny(y);
@@ -13862,6 +13878,8 @@ static void science_button_release(int button, int x, int y)
 				mindist = dist2;
 			}
 		}
+		if (dist2 < 100 * 100)
+			near_enough_to_fail = 1;
 	}
 	if (selected) {
 		if (curr_science_guy != selected)
@@ -13875,7 +13893,8 @@ static void science_button_release(int button, int x, int y)
 		else
 			request_sci_select_target(OPCODE_SCI_SELECT_TARGET_TYPE_WAYPOINT,
 					(uint32_t) -1); /* deselect */
-	}
+	} else if (near_enough_to_fail)
+		wwviaudio_add_sound(UISND1);
 	pthread_mutex_unlock(&universe_mutex);
 	return;
 }
@@ -14436,6 +14455,18 @@ static void draw_science_details(GtkWidget *w, GdkGC *gc)
 				sng_abs_xy_draw_string(buf, TINY_FONT, 10, y);
 			}
 			y += yinc;
+		}
+	} else if (curr_science_guy->type == OBJTYPE_CARGO_CONTAINER) {
+		struct cargo_container_contents *ccc = &curr_science_guy->tsd.cargo_container.contents;
+		sprintf(buf, "PROBABLE CONTENTS:");
+		sng_abs_xy_draw_string(buf, TINY_FONT, 10, y);
+		y += yinc;
+		if (ccc->item >= 0) {
+			sprintf(buf, "- %4.2f %s %s", ccc->qty,
+				commodity[ccc->item].unit, commodity[ccc->item].scans_as);
+			sng_abs_xy_draw_string(buf, TINY_FONT, 10, y);
+		} else {
+			sng_abs_xy_draw_string("UNKNOWN", TINY_FONT, 10, y);
 		}
 	}
 }
@@ -16983,6 +17014,9 @@ static void make_science_forget_stuff(void)
 					o->tsd.ship.cargo[j].contents.item = -1;
 					o->tsd.ship.cargo[j].contents.qty = 0;
 				}
+			} else if (o->type == OBJTYPE_CARGO_CONTAINER) {
+					o->tsd.cargo_container.contents.item = -1;
+					o->tsd.cargo_container.contents.qty = 0;
 			}
 		}
 	}
@@ -17885,11 +17919,6 @@ static int load_static_textures(void)
 	red_torpedo_material.texture_mapped_unlit.texture_id = load_texture("textures/red-torpedo-texture.png");
 	red_torpedo_material.texture_mapped_unlit.do_blend = 1;
 
-	material_init_texture_mapped_unlit(&thrust_flare_material);
-	thrust_flare_material.billboard_type = MATERIAL_BILLBOARD_TYPE_SPHERICAL;
-	thrust_flare_material.texture_mapped_unlit.texture_id = load_texture("textures/thrust_flare.png");
-	thrust_flare_material.texture_mapped_unlit.do_blend = 1;
-
 	material_init_texture_mapped_unlit(&spark_material);
 	spark_material.billboard_type = MATERIAL_BILLBOARD_TYPE_SPHERICAL;
 	spark_material.texture_mapped_unlit.texture_id = load_texture("textures/spark-texture.png");
@@ -17974,6 +18003,36 @@ static int load_static_textures(void)
 	init_thrust_material(&thrust_material[2], "textures/thrustgreen.png");
 	init_thrust_material(&thrust_material[3], "textures/thrustyellow.png");
 	init_thrust_material(&thrust_material[4], "textures/thrustviolet.png");
+
+	material_init_texture_mapped_unlit(&thrust_flare_material[0]);
+	thrust_flare_material[0].billboard_type = MATERIAL_BILLBOARD_TYPE_SPHERICAL;
+	thrust_flare_material[0].texture_mapped_unlit.texture_id = load_texture("textures/thrust_flare.png");
+	thrust_flare_material[0].texture_mapped_unlit.do_blend = 1;
+
+	thrust_flare_material[1] = thrust_flare_material[0];
+	thrust_flare_material[2] = thrust_flare_material[0];
+	thrust_flare_material[3] = thrust_flare_material[0];
+	thrust_flare_material[4] = thrust_flare_material[0];
+
+	thrust_flare_material[0].texture_mapped_unlit.tint.red = 0.8;
+	thrust_flare_material[0].texture_mapped_unlit.tint.blue = 1.0;
+	thrust_flare_material[0].texture_mapped_unlit.tint.green = 0.8;
+
+	thrust_flare_material[1].texture_mapped_unlit.tint.red = 1.0;
+	thrust_flare_material[1].texture_mapped_unlit.tint.blue = 0.8;
+	thrust_flare_material[1].texture_mapped_unlit.tint.green = 0.8;
+
+	thrust_flare_material[2].texture_mapped_unlit.tint.red = 0.8;
+	thrust_flare_material[2].texture_mapped_unlit.tint.blue = 0.8;
+	thrust_flare_material[2].texture_mapped_unlit.tint.green = 1.0;
+
+	thrust_flare_material[3].texture_mapped_unlit.tint.red = 1.0;
+	thrust_flare_material[3].texture_mapped_unlit.tint.blue = 0.8;
+	thrust_flare_material[3].texture_mapped_unlit.tint.green = 1.0;
+
+	thrust_flare_material[4].texture_mapped_unlit.tint.red = 1.0;
+	thrust_flare_material[4].texture_mapped_unlit.tint.blue = 1.0;
+	thrust_flare_material[4].texture_mapped_unlit.tint.green = 0.8;
 
 	material_init_texture_mapped_unlit(&warp_tunnel_material);
 	warp_tunnel_material.texture_mapped_unlit.texture_id = load_texture("textures/warp-tunnel.png");
@@ -19239,7 +19298,7 @@ static void init_meshes()
 	nebula_mesh = mesh_fabricate_billboard(2, 2);
 	sun_mesh = mesh_fabricate_billboard(30000, 30000);
 	black_hole_mesh = mesh_fabricate_billboard(1, 1);
-	thrust_animation_mesh = init_thrust_mesh(30, 30, 1.3, 1);
+	thrust_animation_mesh = init_thrust_mesh(70, 200, 1.3, 1);
 	warpgate_mesh = snis_read_model(d, "warpgate.stl");
 	mesh_cylindrical_yz_uv_map(warpgate_mesh);
 	warp_core_mesh = snis_read_model(d, "warp-core.stl");

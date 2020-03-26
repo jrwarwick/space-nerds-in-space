@@ -60,15 +60,18 @@ startz = 0;
 
 -- TimeScale is definitely useful for testing and debugging, maybe useful for a "difficulty setting"
 timescale = .8;
+-- A difficulty setting might also trigger additional proddings and hints blended in.
+
 
 -- how many inabitants on the station
-survivors = 238;
+survivors = 238; --TODO can we make this all dynamic?
 
 -- how many zarkons to attack
 number_of_zarkons = 3;
 zarkon_check_interval = 10 * 15; -- check for zarkon attack every 15 seconds
 
 superbomb_disposed = false;
+superbomb_container_id = nil;
 detonation_ogg_filepath = "sounds/big_explosion.ogg";
 
 -- Interval between distress calls from ICARUS station is 120 seconds
@@ -84,8 +87,8 @@ vekkazi = 4;
 
 -- Ship type values (must match share/snis/ship_types.txt)
 disruptor = 12;
+skorpio = 11;
 dragonhawk = 10;
-dreadknight = 18;
 
 
 
@@ -116,6 +119,11 @@ scybony = 15000 + math.random(30000);
 scybonz = 12000 + math.random(30000);
 scybonr = 4900
 
+fralisx = 22000 + math.random(30000);
+fralisy = 25000 + math.random(30000);
+fralisz = 10000 + math.random(30000);
+fralisr = 4000
+
 -- Name and location of station and planets within the DOOMSDAY radius
 -- TODO: need a few more here, to increase the stakes. For bonus value: known enemies of Zarkons should be included,
 -- and maybe some politically interesting transmissions from one of these planets during exposition.
@@ -143,7 +151,7 @@ function transmission_received(from, channel, message)
 		comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "THANK YOU, LOCATION RECEIVED! WE'RE SCRAMBLING NOW!"); 
 		comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "STAND BY FOR EJECTION."); 
 		--probably this ought to go into a call back for a little delay, maybe some sfx
-		eject_superbomb_from_starbase(bonx_starbase);
+		superbomb_container_id = eject_superbomb_from_starbase(bonx_starbase);
 	end
 end
 comms_channel_unlisten("SB-01 ENGINEERING", bonx_starbase_engineering_channel)
@@ -193,6 +201,11 @@ end
 bonx, bonx_starbase = add_planet_plus_starbase(bonxname, bonxx, bonxy, bonxz, bonxr, 1);
 scybon, scybon_starbase = add_planet_plus_starbase("SCYBON", scybonx, scybony, scybonz, scybonr, 2);
 tobbrax, tobbrax_starbase = add_planet_plus_starbase("TOBBRAX", tobbraxx, tobbraxy, tobbraxz, tobbraxr, 3);
+fralis = add_planet("FRALIS", fralisx, fralisy, fralisz, fralisr, 0, 0);
+endangered_planets = {bonx,scybon,tobbrax,fralis};
+set_planet_description(bonx,"ENORMOUS POPULATION.");
+set_planet_description(scybon,"MEDIUM POPULATION.");
+set_planet_description(fralis,"SMALL POPULATION.");
 
 -- Add in some nebulas
 n1 = add_nebula("INSANITY-MAJORIS", x + 5000, y - 100, z - 1500, 5000);
@@ -211,6 +224,9 @@ wormhole2y = scybony + 500;
 wormhole2z = scybonz + 700;
 
 -- Give the player a wormhole out of a bad situation
+-- TODO: ideally put this near an "obvious" ideal disposal sight, AND make that
+-- the location that the science/sight-seeing vessel is approaching (which maybe they
+-- can then use for escape also)
 wormhole1, wormhole2 = add_wormhole_pair(wormhole1x, wormhole1y, wormhole1z, wormhole2x, wormhole2y, wormhole2z);
 
 -- Function to create an asteroid field
@@ -229,7 +245,7 @@ end
 
 
 
-function all_hands_lost()
+function all_is_lost()
 	show_timed_text(player_ids[1], 10, "SUPERBOMB\n" ..
 		"ALL LIFEORMS NEAR " .. station .. " ORBITING " .. bonxname .. "\n" ..
 		"WERE LOST TO THE EVIL DOOMSDAY SUPERBOMB\n");
@@ -252,9 +268,9 @@ end
 
 function you_delivered_the_bomb()
 	superbomb_disposed = true;
-	--TODO: effective doomsday radius check
+	--TODO: effective doomsday radius check --Actually this needs inverse radius timer check
 	if affected_planets >= 0 then
-		all_hands_lost();
+		all_is_lost();
 	else
 		show_timed_text(player_ids[1], 10, "SUPERBOMB\n" ..
 			"YOU HAVE SAVED " .. 100.0 * (survivors / 8.0) .. " PERCENT OF\n" ..
@@ -275,6 +291,30 @@ function wheres_the_bomb()
 	comms_transmission(bonx_starbase, "PLEASE ASSIST WITH WHATEVER YOU CAN DO.");
 	comms_transmission(bonx_starbase, "------------------");
 	--if we unload passengers to help search, it helps? Or give more clues about scanning?
+end
+
+function bomb_victim_proximity()
+	victim_count = 0;
+
+	if player_has_bomb(player_ids[1]) then
+		bomb_oid = player_ids[1];
+	else
+		--TODO: this is gonna have some bugs. not liking the global superbomb_container_id. rethink this some.
+		bomb_oid = superbomb_container_id;
+	end
+	for i, eplanet in ipairs(endangered_planets) do
+		print("checking on status of planet "..get_object_name(eplanet));
+		if object_distance(bomb_oid, eplanet) then
+			victim_count = victim_count + 1; --TODO: how do i get planetary population?
+			print("another dead planet...");
+		end
+	end
+	--TODO: check on ancilliary target (sightseer/science vessel)
+	--Or maybe rename and return number of vicitims within blast radius? 
+	--  therefore 0 is success condition
+	print(victim_count);
+
+	return victim_count;
 end
 
 -- check if the player has the doomsday superbomb in one of the cargo bays
@@ -458,15 +498,28 @@ function distress_call3()
 	demon_print("Superbomb count down has begun!");
 end
 
+--TODO: are cargo containers destructuible? if so, call superbomb_detonation if player shoots it.
+
 function superbomb_detonation()
 	demon_print("Superbomb DETONATED!");
 	print("Detonation now ocurring...");
+	if bomb_victim_proximity() then
+		print("there were casualties...");
+	else
+		print("victims saved, heroic!");
+	end
+
 	--maybe blow each planet in succession first...
 	px,py,pz = get_object_location(player_ids[1]);
 	--add_explosion(x, y, z, v, nsparks, 60, OBJTYPE_PLANET, 0);
 	if player_has_bomb(player_ids[1]) then
 		print("the explosion is starting with the player");
 		add_explosion(px, py, pz, player_ids[1], 30, 600, OBJTYPE_BLACK_HOLE, 1);
+	elseif superbomb_container_id 
+		print("bomb is just floating in space...");
+		cx,cy,cz = get_object_location(superbomb_container_id );
+		add_explosion(cx, cy, cz, superbomb_container_id, 30, 600, OBJTYPE_BLACK_HOLE, 1);
+		--but make sure it wasn't destroyed or re-stowed or something.
 	else
 		sbx,sby,sbz = get_object_location(bonx_starbase);
 		add_explosion(sbx, sby, sbz, bonx_starbase, 30, 600, OBJTYPE_BLACK_HOLE, 1);
@@ -494,11 +547,12 @@ end
 function send_in_the_zarkons()
 	print("Sending in the zarkons");
 	px,py,pz = get_object_location(player_ids[1]);
+	--TODO: maybe instead of random, come from the "far side" of the planet
 	zx = px + math.random(4000) - 2000;
 	zy = py + math.random(4000) - 2000;
 	zz = pz + math.random(4000) - 2000;
 	for i = 1, number_of_zarkons do
-		zarkon_ship[i] = add_ship(shipname[i], zx, zy, zz, dreadknight, zarkon, 0);
+		zarkon_ship[i] = add_ship(shipname[i], zx, zy, zz, skorpio, zarkon, 0);
 		ai_push_attack(zarkon_ship[i], player_ids[1]);
 		zy = zy + 250;
 	end

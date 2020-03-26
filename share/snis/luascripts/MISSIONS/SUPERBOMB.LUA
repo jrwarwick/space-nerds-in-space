@@ -1,19 +1,19 @@
 --
 -- SUPER BOMB
 --
--- The fabled Zarkon Doomsday Device is a superbomb that will absolutely
--- annhilate everything, even planets, within its blast radius.
+-- The fabled Zarkon Doomsday Device is a superbomb that will extinguish
+-- all life, even across whole planets, within its blast radius.
 -- Containment is not an option.
 -- It has multiple triggers and anti-tampering mechanisms.
 -- Disabling and sequestering is not an option.
--- Alas! One has been detected recently on board Starbase SD-12.
--- It must be extracted and transported to an empty region of space as
--- quickly as possible! The detonation timer has no more than 6 minutes
+-- Alas! One has been detected recently somewhere on board Starbase ICARUS.
+-- It must be extracted and transported to a distant empty region of space as
+-- quickly as possible! The detonation timer has no more than a few minutes
 -- remaining! Help us, Heroes!
--- First the heroes must locate the starbase, and assist in locating the
--- bomb within the space station's bowels via a high resolution scan
--- from SCIENCE. Then the bomb will be availble for transfer to the
--- players' ship.
+-- First the heroes must locate the starbase, NAVIGATE to within range
+-- and then assist in locating the bomb within the space station's bowels 
+-- via a high resolution scan from SCIENCE. 
+-- Then the bomb will be availble for transfer to the players' ship.
 -- Once the bomb is loaded onto the ship, the crew must find a region of
 -- space that is far enough away not to kill anyone in the rather large
 -- ???-km radius.  Once there, they must eject the cargo and then
@@ -40,12 +40,14 @@
 --      AND "here" "area" "region" "sector" "locality" "place",
 -- THEN they will warp out and this will count as successfully saving their lives.
 -- At first, though, they send garbled message to the effect of: "we did not copy, please repeat, your signal is breaking up"
---   this can be overcome by closing the distance some (requiring risky re-approach of the doomsday radius) or boosting the signal and aiming the transmission antenna
+--   This transmission difficulty can be overcome by closing the distance some 
+-- (requiring risky re-approach of the doomsday radius) and/or boosting the signal 
+-- with higher COMMS power and/or aiming the transmission antenna
 --Extra bonus: shields can provide a small measure of protection, but only at the outer 10% of the blast radius. One last straggler with broken/no-shields is within the blast radius.
 --If our heroes can position themselves directly in-line, then with full shields they will survive, and shield/shadow the smaller, weaker craft. Albeit shields will be reduced to 8% and several subsystems will be damaged.
---Custom SFX or at least custom VFX (super bright flash and brief console screen shakey-glitchy) would be cool to signify the detonation.
+-- TODO: Custom SFX or at least custom VFX (super bright flash and brief console screen shakey-glitchy) would be cool to signify the detonation. Trigger atmospheric light flash, if available.
 -- Should/could it be required to eject all other cargo to fit the one bomb in?
--- it would be cool to replace planets with misshapen, scorched cinders.
+-- It would also be cool to replace planets with misshapen, scorched cinders, within the blast radius.
 
 
 -- First, clear the board
@@ -56,7 +58,7 @@ startx = 101000;
 starty = 6000;
 startz = 0;
 
--- TimeScale is definitely useful for debugging, maybe useful for a "difficulty setting"
+-- TimeScale is definitely useful for testing and debugging, maybe useful for a "difficulty setting"
 timescale = .8;
 
 -- how many inabitants on the station
@@ -442,6 +444,7 @@ function distress_call3()
 		comms_transmission(bonx_starbase, "GOOD LUCK, AND COME BACK SAFE.");
 		comms_transmission(bonx_starbase, "WE WILL BE MONITORING AND AWAITING");
 		comms_transmission(bonx_starbase, "YOUR SAFE RETURN.");
+		--Might be a good time for a warning about indications of zarkonian interceptors.
 	else
 		comms_transmission(bonx_starbase, "THE SITUATION IS DESPARATE. MANY, MANY");
 		comms_transmission(bonx_starbase, "LIVES HANG IN THE BALANCE. WE BEG FOR");
@@ -541,11 +544,18 @@ create_asteroid_field(50, scybonx, scybony, scybonz, 500000);
 
 
 -- Create our macguffin -- a SuberBomb, eventually to be contained in cargocontainer
--- Since the superbomb commodity is carefully hidden on the station, don't add it to inventory or otherwise spawn YET
--- First, require the player to be docked/in proximity at the station, THEN yield/enable the highres scan button to SCIENCE
--- and only after the scan, and/or communication thereof add the bomb to the station inventory or eject it
+-- Since the superbomb commodity is carefully hidden on the station, don't add it 
+-- to inventory or otherwise spawn YET. First, require the player to be docked/in-proximity 
+-- at the station, THEN yield/enable the highres scan button to SCIENCE
+-- and only after the scan, and/or communication thereof add the bomb to the station inventory 
+-- or eject it
 active_superbomb = add_commodity("ARMED SUPERBOMB", "SEALED UNIT", "RADIOACTIVE COMPOSITE",
 					100.0, 02, 1.0, 0.1, 0.1, 0.7, 0.0);
+
+-- TODO(maybe): another callback for "low-res"/normal scan event: fewer details, and make 
+-- the anti-neutrino detection vague (with no location), but offer a "highres scan" 
+-- via a custom button. and its that highres scan that reveals the specific location.
+
 function hires_scan_callback(pid,screenid)
 	--TODO: conditional on sb-01 is selected, else respond in some other random interesting-ish way
 	--TODO: conditional on sensor powerlevel at max, else make a failure-but-try-again apparent somehow
@@ -555,24 +565,27 @@ function hires_scan_callback(pid,screenid)
 	--TODO: experiment with a little loop or chain of callbacks to get bleep-pause-show-bleep-pause-show-etc for each major line item of info.
 	-- The text is pretty long, no autowrap. Embedded newlines work though! Still an upward limit on total characters.
 	--attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nENERGETICS: NUCLEAR REACTOR CORE DETECTED\n  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n  2 SHUTTLECRAFT DETECTED IN LOWER BAYS.\n  257 LIFEFORMS DETECTED.\nWARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n  LOCATION: DECK 17, WATER TREATMENT PLANT");
-	attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nENERGETICS: NUCLEAR REACTOR DETECTED\n  LOCATION: UPPER CENTER, NOMINAL RADIATION.\nSHUTTLECRAFT DETECTED IN LOWER BAYS.\n\nWARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n  LOCATION: DECK 17, H2O TREATMENT PLANT");
-	-- TODO(maybe): make the anti-neutrino detection vague, but offer a "highres scan" via a custom button. and its that highres scan that reveals the specific location.
+	attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
+		"ENERGETICS: NUCLEAR REACTOR DETECTED\n"..
+		"  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
+		"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
+		"WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n"..
+		"  LOCATION: DECK 17, H2O TREATMENT PLANT");
 end
 
 enable_custom_button(player_ids[1], 4);
 set_custom_button_label(player_ids[1], 4, "INITIATE HI-RESOLUTION SCAN");
--- create sci scan button handler
--- add detailed sci text there
--- register callback on button event
 
--- We can leave the derelict out there, but its just flavor text. TODO: put it close to the station, but kinda out of the way, like it was trying not to attract attention. or maybe far away but close the player start place?
+
+-- We can leave the derelict out there, but its just flavor text. TODO: put it close to the station, but kinda out of the way, like it was trying not to attract attention. or maybe far away but close the player start place? Lots of "antineutrino damage/residuals".
 -- Or maybe we should have the player discover this first? maybe this how they learn of the plot? reading some invocation of the dark powers for the doomsday device to succeed?
 -- Make it full of Zarkon Zealots that obviously commited suicide after bomb delivery
 -- throw in some religious texts and some so-on.
 
 derelict = add_derelict("ZARKNAX RYTOR", derelictx, derelicty, derelictz, dragonhawk, zarkon);
 set_object_velocity(derelict, 0, 0, 0);
-
+attach_science_text(derelict, "HIGH RESIDUAL ANTI-NEUTRINO EMISSIONS\n"..
+	"WARP ENGINE: DESTROYED"); --TODO:<< prhase this text better so that it a) sounds cool, and b) leads the players to understand that its the antineutrinos that killed the warp core (so they better be careful when they are the transporters!)
 
 
 add_a_bunch_of_neutral_ships()

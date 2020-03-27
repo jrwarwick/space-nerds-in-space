@@ -64,7 +64,8 @@ enum keyaction {
 		key_eng_preset_4 = 59,
 		key_eng_preset_5 = 60,
 		key_eng_preset_6 = 61,
-#define NKEYSTATES 62
+		key_comms_cmd = 62,
+#define NKEYSTATES 63
 };
 
 struct keyboard_state {

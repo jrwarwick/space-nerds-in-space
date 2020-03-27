@@ -210,6 +210,7 @@ char *keyactionstring[] = {
 	"key_eng_preset_4",
 	"key_eng_preset_5",
 	"key_eng_preset_6",
+	"key_comms_cmd",
 };
 
 void zero_keymaps(void)
@@ -365,6 +366,8 @@ void init_keymap(void)
 	ffmapkey(eng, GDK_KP_4, key_eng_preset_4);
 	ffmapkey(eng, GDK_KP_5, key_eng_preset_5);
 	ffmapkey(eng, GDK_KP_6, key_eng_preset_6);
+
+	mapkey(comms, GDK_slash, key_comms_cmd);
 }
 
 int remapkey(char *stations, char *keyname, char *actionname)

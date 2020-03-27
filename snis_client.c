@@ -4385,6 +4385,8 @@ static void deal_with_keyboard()
 	*/
 }
 
+static void comms_computer_button_pressed( void *x);
+
 static gint key_press_cb(GtkWidget* widget, GdkEventKey* event, gpointer data)
 {
 	enum keyaction ka;
@@ -4429,17 +4431,15 @@ static gint key_press_cb(GtkWidget* widget, GdkEventKey* event, gpointer data)
 			break;
 	case key_comms_cmd:
 			if (displaymode == DISPLAYMODE_COMMS) {
-				if (1) {/* TODO: how do I check for already cursor/focus  in text box?*/
-				} else {
-					if (control_key_pressed) { /*set focus AND prepend /COMPUTER in the box*/
-						comms_computer_button_pressed((void *) 0);
-					} else { /*just set focus to the box, maybe inser slash
-
-						snis_text_input_box_set_contents(comms_ui.comms_input, "/");
-						ui_set_widget_focus(uiobjs, comms_ui.comms_input);
-						*/
-						comms_computer_button_pressed((void *) 0);
-					}
+				if (control_key_pressed) {
+					comms_computer_button_pressed((void *) 0);
+				} else { 
+					/*  just set focus to the box, maybe insert slash alone
+						I would do this, but comms_uid not defined yet...
+					snis_text_input_box_set_contents(comms_ui.comms_input, "/");
+					ui_set_widget_focus(uiobjs, comms_ui.comms_input);
+					*/
+					comms_computer_button_pressed((void *) 0);
 				}
 			} break;
 	case key_toggle_space_dust:

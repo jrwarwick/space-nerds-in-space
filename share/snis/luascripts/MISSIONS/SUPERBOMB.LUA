@@ -59,7 +59,7 @@ starty = 6000;
 startz = 0;
 
 -- TimeScale is definitely useful for testing and debugging, maybe useful for a "difficulty setting"
-timescale = .6;
+timescale = .85;
 -- A difficulty setting might also trigger additional proddings and hints blended in.
 
 
@@ -426,7 +426,11 @@ function we_have_you_on_visual(oid1, oid2, distance)
 	-- then sender ID could include "traffic control" for bases, "flight officer" for ships, etc.
 	-- if factions match, they call you by name, if mismatch, they may demand that you identify yourself.
 	comms_transmission(oid2, "WE HAVE YOU ON VISUAL, " .. player_name);
-	--Good chance to check for presence of clearance, issue reminders and warnings.
+	--This is a good opportunity to maybe issue prompts, reminders of need for clearance, etc.
+	--Maybe in "easy" mode you get auto-issued clearance, but in hard mode you just get reminded to ask for one? 
+	comms_transmission(oid2, "THE BOSS SAYS ITS URGENT. YOU ARE PRE-CLEARED FOR DOCKING.");
+	comms_transmission(oid2, "TRANSMITTING DOCUMENT NOW.");
+	issue_docking_clearance(oid2, player_ids[1], get_object_name(bonx_starbase)..":DOCKING_CONTROL", 0);
 	variety = math.random(100)
 	if variety < 25 then
 		comms_transmission(oid2, "STEADY AS SHE GOES.");
@@ -523,6 +527,7 @@ end
 --TODO: are cargo containers destructuible? if so, call superbomb_detonation if player shoots it.
 
 function bomb_attached_oid()
+	--return oid of object that best reflects the location of the bomb
 	--because bomb could be:
 	--still "hidden" on the base
 	--ejected from the base, but floating
@@ -566,7 +571,8 @@ end
 
 function sad_conclusion()
 	show_timed_text(player_ids[1], 8, "FAILURE.\n"..
-		"THE SUPERBOMB DOOMSDAY DEVICE DETONATED WITH LIFE WITHIN ITS LETHAL RADIUS.");
+		"THE SUPERBOMB DOOMSDAY DEVICE DETONATED\n"..
+		"MANY LIVES WERE WITHIN ITS LETHAL RADIUS.");
 end
 
 function maintain_zarkon_focus()

@@ -59,7 +59,7 @@ starty = 6000;
 startz = 0;
 
 -- TimeScale is definitely useful for testing and debugging, maybe useful for a "difficulty setting"
-timescale = .8;
+timescale = .6;
 -- A difficulty setting might also trigger additional proddings and hints blended in.
 
 
@@ -72,7 +72,9 @@ zarkon_check_interval = 10 * 15; -- check for zarkon attack every 15 seconds
 
 superbomb_disposed = false;
 superbomb_container_id = nil;
+superbomb_lethal_radius = 120000;
 detonation_ogg_filepath = "sounds/big_explosion.ogg";
+superbomb_location_directions = "";
 
 -- Interval between distress calls from ICARUS station is 120 seconds
 distress_call_interval = 10 * 120;
@@ -139,25 +141,40 @@ bonxr = 6100
 function transmission_received(from, channel, message)
 	print("Transmission recieved from:'".. from .. "' on channel ".. channel.. ".");
 	print("Message: ", message);
-
+	clean_message = string.lower(string.gsub(message, "%s+", ""))
 	
-	--TODO: actually: what if they split it up over several messages? so maybe need a list of booleans to cover satisfaction incrementally.
-	if string.match(message,"deck") then
-		print("got deck...");
+	--What if they split the clue up over several messages? 
+	--So to cover satisfaction incrementally, and a chance to normalize a little:
+	if string.match(clean_message,"deck") then
+		print("  got clue 'deck'...");
+		superbomb_location_directions = superbomb_location_directions .. " deck";
 	end 
-	if string.match(message,"deck") and string.match(message,"17") and (string.match(message,"water") or string.match(message,"h2o")) then
-
+	if string.match(clean_message,"seventeen") or string.match(clean_message,"17") then
+		print("  got clue '17'...");
+		superbomb_location_directions = superbomb_location_directions .. " 17";
+	end
+	if string.match(clean_message,"water") or string.match(clean_message,"h2o") or string.match(clean_message,"filteringplant") then
+		print("  got clue 'water'...");
+		superbomb_location_directions = superbomb_location_directions .. " water";
+	end
+	if string.match(message,"deck") and string.match(message,"17") and string.match(message,"water") then
 		--TODO: add already ejected flag and subcondition.
 		comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "THANK YOU, LOCATION RECEIVED! WE'RE SCRAMBLING NOW!"); 
 		comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "STAND BY FOR EJECTION."); 
-		--probably this ought to go into a call back for a little delay, maybe some sfx
-		superbomb_container_id = eject_superbomb_from_starbase(bonx_starbase);
+		
+		register_timer_callback("engineering_extracting_bomb", 80, 0);
 	end
 end
 comms_channel_unlisten("SB-01 ENGINEERING", bonx_starbase_engineering_channel)
 comms_channel_listen("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "transmission_received");
 --comms_channel_listen(name, channel, callback)
 
+function engineering_extracting_bomb()
+	--probably this ought to go into a call back for a little delay, maybe some sfx
+	play_sound(player_ids[1], "sounds/mining-bot-deployed.ogg");
+	superbomb_container_id = eject_superbomb_from_starbase(bonx_starbase);
+	comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "WE GOT IT! PACKAGED AND EJECTED!"); 
+end
 
 function eject_superbomb_from_starbase(starbase_number)
 	--Optional unlock/disengagement something check here? or similar safe-to-receive condition (else boom)
@@ -300,11 +317,16 @@ function bomb_victim_proximity()
 		bomb_oid = player_ids[1];
 	else
 		--TODO: this is gonna have some bugs. not liking the global superbomb_container_id. rethink this some.
-		bomb_oid = superbomb_container_id;
+		if superbomb_container_id == nil then
+			print("uhoh, its STILL on the station (probably)!");
+			bomb_oid = bonx_starbase;
+		else
+			bomb_oid = superbomb_container_id;
+		end
 	end
 	for i, eplanet in ipairs(endangered_planets) do
 		print("checking on status of planet "..get_object_name(eplanet));
-		if object_distance(bomb_oid, eplanet) then
+		if object_distance(bomb_oid, eplanet) < superbomb_lethal_radius then
 			victim_count = victim_count + 1; --TODO: how do i get planetary population?
 			print("another dead planet...");
 		end
@@ -500,11 +522,21 @@ end
 
 --TODO: are cargo containers destructuible? if so, call superbomb_detonation if player shoots it.
 
+function bomb_attached_oid()
+	--because bomb could be:
+	--still "hidden" on the base
+	--ejected from the base, but floating
+	--in the cargo hold of novus
+	--reejected into space
+	--TODO: after writing this, refactor detonation and victim evaluation functions to use it.
+end
+
 function superbomb_detonation()
 	demon_print("Superbomb DETONATED!");
 	print("Detonation now ocurring...");
 	if bomb_victim_proximity() then
 		print("there were casualties...");
+		register_timer_callback("sad_conclusion", 80, 0);
 	else
 		print("victims saved, heroic!");
 	end
@@ -515,7 +547,8 @@ function superbomb_detonation()
 	if player_has_bomb(player_ids[1]) then
 		print("the explosion is starting with the player");
 		add_explosion(px, py, pz, player_ids[1], 30, 600, OBJTYPE_BLACK_HOLE, 1);
-	elseif superbomb_container_id 
+		move_object(player_ids[1],bonxx,bonxy,bonxz);
+	elseif superbomb_container_id then
 		print("bomb is just floating in space...");
 		cx,cy,cz = get_object_location(superbomb_container_id );
 		add_explosion(cx, cy, cz, superbomb_container_id, 30, 600, OBJTYPE_BLACK_HOLE, 1);
@@ -529,12 +562,11 @@ function superbomb_detonation()
 	-- could have a custom EVERYTHING IS LIT UP skybox--load_skybox(ship_id, filenameprefix);
 	play_sound(player_ids[1], detonation_ogg_filepath);
 	--set_player_damage(player_ids[1], system, value);
-	register_timer_callback("sad_conclusion", 60, 0);
 end
 
 function sad_conclusion()
-	destroy_ship(player_ids[1]);
-	show_timed_text(player_ids[1], 8, "FAILURE.\nTHE SUPERBOMB DOOMSDAY DEVICE DETONATED.\nEVERYTHING IS GONE.");
+	show_timed_text(player_ids[1], 8, "FAILURE.\n"..
+		"THE SUPERBOMB DOOMSDAY DEVICE DETONATED WITH LIFE WITHIN ITS LETHAL RADIUS.");
 end
 
 function maintain_zarkon_focus()
@@ -615,7 +647,6 @@ function hires_scan_callback(pid,screenid)
 	--TODO: conditional on sensor powerlevel at max, else make a failure-but-try-again apparent somehow
 	--todo: some kind of high-energy wind up/signal noise--play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
 	play_sound(player_ids[1], "sounds/ui29.ogg");
-	play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
 	--TODO: experiment with a little loop or chain of callbacks to get bleep-pause-show-bleep-pause-show-etc for each major line item of info.
 	-- The text is pretty long, no autowrap. Embedded newlines work though! Still an upward limit on total characters.
 	--attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nENERGETICS: NUCLEAR REACTOR CORE DETECTED\n  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n  2 SHUTTLECRAFT DETECTED IN LOWER BAYS.\n  257 LIFEFORMS DETECTED.\nWARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n  LOCATION: DECK 17, WATER TREATMENT PLANT");
@@ -625,6 +656,7 @@ function hires_scan_callback(pid,screenid)
 		"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
 		"WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n"..
 		"  LOCATION: DECK 17, H2O TREATMENT PLANT");
+	play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
 end
 
 enable_custom_button(player_ids[1], 4);

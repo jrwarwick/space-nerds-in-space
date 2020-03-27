@@ -4377,6 +4377,12 @@ static void deal_with_keyboard()
 		if (kbstate.pressed[key_eng_preset_6])
 			snis_button_trigger_button(eng_ui.preset_buttons[5]);
 	}
+
+	/* maybe need this too??
+	if (displaymode == DISPLAYMODE_COMMS) {
+		if (kbstate.pressed[
+	}
+	*/
 }
 
 static gint key_press_cb(GtkWidget* widget, GdkEventKey* event, gpointer data)
@@ -4421,6 +4427,21 @@ static gint key_press_cb(GtkWidget* widget, GdkEventKey* event, gpointer data)
 	case key_sci_mining_bot:
 			sci_mining_bot_pressed((void *) 0);
 			break;
+	case key_comms_cmd:
+			if (displaymode == DISPLAYMODE_COMMS) {
+				if (1) {/* TODO: how do I check for already cursor/focus  in text box?*/
+				} else {
+					if (control_key_pressed) { /*set focus AND prepend /COMPUTER in the box*/
+						comms_computer_button_pressed((void *) 0);
+					} else { /*just set focus to the box, maybe inser slash
+
+						snis_text_input_box_set_contents(comms_ui.comms_input, "/");
+						ui_set_widget_focus(uiobjs, comms_ui.comms_input);
+						*/
+						comms_computer_button_pressed((void *) 0);
+					}
+				}
+			} break;
 	case key_toggle_space_dust:
 			if (nfake_stars == 0)
 				nfake_stars = 2000;

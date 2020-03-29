@@ -430,7 +430,6 @@ function we_have_you_on_visual(oid1, oid2, distance)
 	--Maybe in "easy" mode you get auto-issued clearance, but in hard mode you just get reminded to ask for one? 
 	comms_transmission(oid2, "THE BOSS SAYS ITS URGENT. YOU ARE PRE-CLEARED FOR DOCKING.");
 	comms_transmission(oid2, "TRANSMITTING DOCUMENT NOW.");
-	issue_docking_clearance(oid2, player_ids[1], get_object_name(bonx_starbase)..":DOCKING_CONTROL", 0);
 	variety = math.random(100)
 	if variety < 25 then
 		comms_transmission(oid2, "STEADY AS SHE GOES.");
@@ -440,6 +439,7 @@ function we_have_you_on_visual(oid1, oid2, distance)
 		comms_transmission(oid2, "ALL BERTHINGS CLEAR. COMMAND REQUESTS YOU PROCEED WITH HASTE.");
 	end
 	comms_transmission(oid2, "------------------");
+	issue_docking_clearance(oid2, player_ids[1], get_object_name(bonx_starbase)..":DOCKING_CONTROL", 0);
 	register_proximity_callback("anxious_greeting", player_ids[1], bonx_starbase, 1200); 
 end
 

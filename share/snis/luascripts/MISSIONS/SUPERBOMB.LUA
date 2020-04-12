@@ -76,6 +76,7 @@ superbomb_lethal_radius = 120000;
 detonation_ogg_filepath = "sounds/big_explosion.ogg";
 superbomb_location_directions = "";
 
+
 -- Interval between distress calls from ICARUS station is 120 seconds
 distress_call_interval = 10 * 120;
 
@@ -132,6 +133,7 @@ fralisr = 4000
 station = "ICARUS STATION"
 bonxname = "BONX"
 bonx_starbase_engineering_channel = 10;
+bonx_starbase_has_been_selected = false;
 bonxx = derelictx + math.random(200000) - 100000;
 bonxy = derelicty + math.random(200000) - 100000;
 bonxz = derelictz + math.random(200000) - 100000;
@@ -644,6 +646,14 @@ create_asteroid_field(50, scybonx, scybony, scybonz, 500000);
 active_superbomb = add_commodity("ARMED SUPERBOMB", "SEALED UNIT", "RADIOACTIVE COMPOSITE",
 					100.0, 02, 1.0, 0.1, 0.1, 0.7, 0.0);
 
+function object_scanned_event_callback(pid,oid)
+	if (oid == bonx_starbase) then
+		bonx_starbase_has_been_selected = true;
+	end
+end
+register_callback("object-scanned-event", "object_scanned_event_callback");
+
+
 -- TODO(maybe): another callback for "low-res"/normal scan event: fewer details, and make 
 -- the anti-neutrino detection vague (with no location), but offer a "highres scan" 
 -- via a custom button. and its that highres scan that reveals the specific location.
@@ -652,22 +662,39 @@ function hires_scan_callback(pid,screenid)
 	--TODO: conditional on sb-01 is selected, else respond in some other random interesting-ish way
 	--TODO: conditional on sensor powerlevel at max, else make a failure-but-try-again apparent somehow
 	--todo: some kind of high-energy wind up/signal noise--play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
-	play_sound(player_ids[1], "sounds/ui29.ogg");
-	--TODO: experiment with a little loop or chain of callbacks to get bleep-pause-show-bleep-pause-show-etc for each major line item of info.
-	-- The text is pretty long, no autowrap. Embedded newlines work though! Still an upward limit on total characters.
-	--attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nENERGETICS: NUCLEAR REACTOR CORE DETECTED\n  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n  2 SHUTTLECRAFT DETECTED IN LOWER BAYS.\n  257 LIFEFORMS DETECTED.\nWARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n  LOCATION: DECK 17, WATER TREATMENT PLANT");
-	attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
-		"ENERGETICS: NUCLEAR REACTOR DETECTED\n"..
-		"  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
-		"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
-		"WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n"..
-		"  LOCATION: DECK 17, H2O TREATMENT PLANT");
-	play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
+	--It would be better if we can see what we have selected /right now/. 
+	--Rewrite the condition if we find a way.
+	--For now, we will just be just be satisfied with "have they every selected it at least temporarily"
+	if (bonx_starbase_has_been_selected) then
+		play_sound(player_ids[1], "sounds/ui29.ogg");
+		--TODO: experiment with a little loop or chain of callbacks to get bleep-pause-show-bleep-pause-show-etc for each major line item of info.
+		-- The text is pretty long, no autowrap. Embedded newlines work though! Still an upward limit on total characters.
+		--attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nENERGETICS: NUCLEAR REACTOR CORE DETECTED\n  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n  2 SHUTTLECRAFT DETECTED IN LOWER BAYS.\n  257 LIFEFORMS DETECTED.\nWARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n  LOCATION: DECK 17, WATER TREATMENT PLANT");
+		attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
+			"ENERGETICS: NUCLEAR REACTOR DETECTED\n"..
+			"  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
+			"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
+			"WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n"..
+			"  LOCATION: DECK 17, H2O TREATMENT PLANT");
+		play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
+	else
+		play_sound(player_ids[1], "sounds/ui9.ogg");
+	end
+	--TODO: add a "burst" of heat to sensors? should have asked for extra cooling from ENGINEERING!
+	--and/or disable the sensors temporarily for recharge/refresh, but make it longer if heat is in the orange.
+	--disable_custom_button(player_ids[1], 4); --< if we don't use that, we probably need a flag for recharging state
+	set_custom_button_label(player_ids[1], 4, "RECHARGING");
+	register_timer_callback("hires_scan_recharged_callback", 80, 0);
 end
 
-enable_custom_button(player_ids[1], 4);
-set_custom_button_label(player_ids[1], 4, "INITIATE HI-RESOLUTION SCAN");
+function hires_scan_recharged_callback()
+	--TODO: check for sensor energy above 50%
+	enable_custom_button(player_ids[1], 4);
+	set_custom_button_label(player_ids[1], 4, "INITIATE HI-RESOLUTION SCAN");
+end
 
+--TODO: consider moving this into docked event call back and/or after the admiral suggests it.
+register_timer_callback("hires_scan_recharged_callback", 10, 0);
 
 -- We can leave the derelict out there, but its just flavor text. TODO: put it close to the station, but kinda out of the way, like it was trying not to attract attention. or maybe far away but close the player start place? Lots of "antineutrino damage/residuals".
 -- Or maybe we should have the player discover this first? maybe this how they learn of the plot? reading some invocation of the dark powers for the doomsday device to succeed?

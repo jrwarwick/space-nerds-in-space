@@ -145,7 +145,7 @@ function transmission_received(from, channel, message)
 	
 	--What if they split the clue up over several messages? 
 	--So to cover satisfaction incrementally, and a chance to normalize a little:
-	if string.match(clean_message,"deck") then
+	if string.match(clean_message,"deck") or string.match(clean_message,"level") then
 		print("  got clue 'deck'...");
 		superbomb_location_directions = superbomb_location_directions .. " deck";
 	end 
@@ -157,7 +157,7 @@ function transmission_received(from, channel, message)
 		print("  got clue 'water'...");
 		superbomb_location_directions = superbomb_location_directions .. " water";
 	end
-	if string.match(message,"deck") and string.match(message,"17") and string.match(message,"water") then
+	if string.match(superbomb_location_directions ,"deck") and string.match(superbomb_location_directions,"17") and string.match(superbomb_location_directions,"water") then
 		--TODO: add already ejected flag and subcondition.
 		comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "THANK YOU, LOCATION RECEIVED! WE'RE SCRAMBLING NOW!"); 
 		comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "STAND BY FOR EJECTION."); 

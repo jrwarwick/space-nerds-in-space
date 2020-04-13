@@ -48,6 +48,7 @@
 -- TODO: Custom SFX or at least custom VFX (super bright flash and brief console screen shakey-glitchy) would be cool to signify the detonation. Trigger atmospheric light flash, if available.
 -- Should/could it be required to eject all other cargo to fit the one bomb in?
 -- It would also be cool to replace planets with misshapen, scorched cinders, within the blast radius.
+-- TODO: consider some refactoring to make this seamlessly work in a multi-player co-op.
 
 
 -- First, clear the board
@@ -143,33 +144,44 @@ bonxr = 6100
 function transmission_received(from, channel, message)
 	print("Transmission recieved from:'".. from .. "' on channel ".. channel.. ".");
 	print("Message: ", message);
-	clean_message = string.lower(string.gsub(message, "%s+", ""))
-	
-	--What if they split the clue up over several messages? 
-	--So to cover satisfaction incrementally, and a chance to normalize a little:
-	if string.match(clean_message,"deck") or string.match(clean_message,"level") then
-		print("  got clue 'deck'...");
-		superbomb_location_directions = superbomb_location_directions .. " deck";
-	end 
-	if string.match(clean_message,"seventeen") or string.match(clean_message,"17") then
-		print("  got clue '17'...");
-		superbomb_location_directions = superbomb_location_directions .. " 17";
-	end
-	if string.match(clean_message,"water") or string.match(clean_message,"h2o") or string.match(clean_message,"filteringplant") then
-		print("  got clue 'water'...");
-		superbomb_location_directions = superbomb_location_directions .. " water";
-	end
-	if string.match(superbomb_location_directions ,"deck") and string.match(superbomb_location_directions,"17") and string.match(superbomb_location_directions,"water") then
-		--TODO: add already ejected flag and subcondition.
-		comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "THANK YOU, LOCATION RECEIVED! WE'RE SCRAMBLING NOW!"); 
-		comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "STAND BY FOR EJECTION."); 
-		
-		register_timer_callback("engineering_extracting_bomb", 80, 0);
+	clean_message = string.lower(string.gsub(message, "%s+", ""));
+	--TODO: maybe turn this into a "valid player ship name" function
+	if channel == bonx_starbase_engineering_channel then
+		basename_pattern = "^"..string.gsub(get_object_name(bonx_starbase),"%-","%%-");
+		print(".... "..basename_pattern);
+		if not string.find(from,basename_pattern) then 
+			--What if they split the clue up over several messages? 
+			--So to cover satisfaction incrementally, and a chance to normalize a little:
+			if string.find(clean_message,"deck") or string.find(clean_message,"level") then
+				print("  * got clue 'deck'...");
+				superbomb_location_directions = superbomb_location_directions .. " deck";
+			end 
+			if string.find(clean_message,"seventeen") or string.find(clean_message,"17") then
+				print("  * got clue '17'...");
+				superbomb_location_directions = superbomb_location_directions .. " 17";
+			end
+			if string.find(clean_message,"water") or string.find(clean_message,"h2o") or string.find(clean_message,"filteringplant") then
+				print("  * got clue 'water'...");
+				superbomb_location_directions = superbomb_location_directions .. " water";
+			end
+			--Now check to see if the normalized, accumulating clue string has everything...
+			if string.find(superbomb_location_directions ,"deck") and string.find(superbomb_location_directions,"17") and string.find(superbomb_location_directions,"water") then
+				--TODO: add already ejected flag and subcondition.
+				comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "THANK YOU, LOCATION RECEIVED! WE'RE SCRAMBLING NOW!"); 
+				comms_channel_transmit("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "STAND BY FOR EJECTION."); 
+				
+				register_timer_callback("engineering_extracting_bomb", 90, 0);
+				--To prevent duplication of the mcguffin, could also be handled by aforementioned todo.
+				comms_channel_unlisten("SB-01 ENGINEERING", bonx_starbase_engineering_channel)
+			end
+		else
+			print("  (ignoring base transmission in callback)");
+		end
 	end
 end
 comms_channel_unlisten("SB-01 ENGINEERING", bonx_starbase_engineering_channel)
+--might want to move this further into the process, maybe also during proximity?
 comms_channel_listen("SB-01 ENGINEERING", bonx_starbase_engineering_channel, "transmission_received");
---comms_channel_listen(name, channel, callback)
 
 function engineering_extracting_bomb()
 	--probably this ought to go into a call back for a little delay, maybe some sfx
@@ -690,7 +702,7 @@ end
 function hires_scan_recharged_callback()
 	--TODO: check for sensor energy above 50%
 	enable_custom_button(player_ids[1], 4);
-	set_custom_button_label(player_ids[1], 4, "INITIATE HI-RESOLUTION SCAN");
+	set_custom_button_label(player_ids[1], 4, "HI-RES SCAN");
 end
 
 --TODO: consider moving this into docked event call back and/or after the admiral suggests it.

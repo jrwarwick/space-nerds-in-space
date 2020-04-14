@@ -1,19 +1,20 @@
 --
 -- SUPER BOMB
 --
--- The fabled Zarkon Doomsday Device is a superbomb that will extinguish
--- all life, even across whole planets, within its blast radius.
+-- The fabled Zarkon Doomsday Device is a compatct superbomb that will 
+-- extinguish all life, even across whole planets, within its blast radius.
 -- Containment is not an option.
 -- It has multiple triggers and anti-tampering mechanisms.
--- Disabling and sequestering is not an option.
+-- Disabling is not an option.
 -- Alas! One has been detected recently somewhere on board Starbase ICARUS.
 -- It must be extracted and transported to a distant empty region of space as
--- quickly as possible! The detonation timer has no more than a few minutes
+-- quickly as possible. The detonation timer has no more than a few minutes
 -- remaining! Help us, Heroes!
 -- First the heroes must locate the starbase, NAVIGATE to within range
 -- and then assist in locating the bomb within the space station's bowels 
 -- via a high resolution scan from SCIENCE. 
--- Then the bomb will be availble for transfer to the players' ship.
+-- After COMMS relays the location information to the station,
+-- then the bomb will be availble for transfer to the players' ship.
 -- Once the bomb is loaded onto the ship, the crew must find a region of
 -- space that is far enough away not to kill anyone in the rather large
 -- ???-km radius.  Once there, they must eject the cargo and then
@@ -69,7 +70,7 @@ survivors = 238; --TODO can we make this all dynamic?
 
 -- how many zarkons to attack
 number_of_zarkons = 3;
-zarkon_check_interval = 10 * 15; -- check for zarkon attack every 15 seconds
+zarkon_check_interval = 10 * 20; -- check for zarkon attack every 20 seconds
 
 superbomb_disposed = false;
 superbomb_container_id = nil;
@@ -194,7 +195,7 @@ function eject_superbomb_from_starbase(starbase_number)
 	--Optional unlock/disengagement something check here? or similar safe-to-receive condition (else boom)
 	--TRANSMISSION: WEVE EJECED THAT DAMN THI*NG! GET IT OUTTA HERE!
 	--TODO: effect: particles or other for hasty airlock blow (ejecting the bomb)
-	text_to_speech(player_ids[1], "Incoming transmission from Icarus station");
+	text_to_speech(player_ids[1], "Incoming transmission from "..station);
 	comms_transmission(starbase_number, "------------------");
 	comms_transmission(starbase_number, "DOOMSDAY DEVICE SECURED IN A CARGO CONTAINER FOR SAFER STOWAGE.");
 	comms_transmission(starbase_number, "WE HAVE EJECTED THAT DAMN THING! GET IT OUTTA HERE!");
@@ -286,7 +287,7 @@ function all_is_lost()
 end
 
 function you_docked_with_the_bomb()
-	text_to_speech(player_ids[1], "Incoming transmission from Icarus station");
+	text_to_speech(player_ids[1], "Incoming transmission from "..station);
 	comms_transmission(bonx_starbase, "------------------");
 	comms_transmission(bonx_starbase, "YOU MUST TAKE THAT HORRIBLE THING AWAY FROM HERE!");
 	comms_transmission(bonx_starbase, "QUICKLY! TAKE IT OUTSIDE THE DOOMSDAY RADIUS!");
@@ -314,7 +315,7 @@ function you_delivered_the_bomb()
 end
 
 function wheres_the_bomb()
-	text_to_speech(player_ids[1], "Incoming transmission from Icarus station");
+	text_to_speech(player_ids[1], "Incoming transmission from "..station);
 	comms_transmission(bonx_starbase, "------------------");
 	comms_transmission(bonx_starbase, "WE MUST FIND THAT SUPERBOMB. WE DON'T KNOW");
 	comms_transmission(bonx_starbase, "WHERE IT IS OR HOW MUCH TIME WE HAVE.");
@@ -400,7 +401,7 @@ function intro()
 end
 
 function anxious_greeting(oid1, oid2, distance)
-	text_to_speech(player_ids[1], "Incoming transmission from Icarus station");
+	text_to_speech(player_ids[1], "Incoming transmission from "..station);
 	comms_transmission(bonx_starbase, "------------------");
 	comms_transmission(bonx_starbase, "HALEY HERE, VERY GLAD TO SEE YOU, " .. player_name .."!");
 	comms_transmission(bonx_starbase, "THERE IS A COMPLICATION. ALTHOUGH WE DID DETECT");
@@ -461,7 +462,7 @@ register_proximity_callback("we_have_you_on_visual", player_ids[1], bonx_starbas
 
 -- First distress call from ICARUS station
 function distress_call1()
-	text_to_speech(player_ids[1], "Incoming transmission from Icarus station");
+	text_to_speech(player_ids[1], "Incoming transmission from "..station);
 	comms_transmission(bonx_starbase, "------------------");
 	comms_transmission(bonx_starbase, "THIS IS ADMIRAL ANTON HALEY");
 	comms_transmission(bonx_starbase, "ABOARD " .. station .. ", UNIFORM REGISTRATION NAME " .. get_object_name(bonx_starbase));
@@ -489,7 +490,7 @@ end
 
 -- Subsequent distress calls from ICARUS station
 function distress_call2()
-	text_to_speech(player_ids[1], "Incoming transmission from Icarus station");
+	text_to_speech(player_ids[1], "Incoming transmission from "..station);
 	comms_transmission(bonx_starbase, "------------------");
 	comms_transmission(bonx_starbase, "THIS IS ADMIRAL ANTON HALEY");
 	if player_has_bomb(player_ids[1]) then
@@ -504,7 +505,7 @@ function distress_call2()
 		comms_transmission(bonx_starbase, "WE ARE DETECTING ELEVATED LEVELS OF");
 		comms_transmission(bonx_starbase, "ANTINEUTRINOS, THIS IS A SURE SIGN THAT");
 		comms_transmission(bonx_starbase, "THIS IS A ZARKONIAN SUPERBOMB, AND THAT");
-		comms_transmission(bonx_starbase, "IT IS FULLY ARMED!");
+		comms_transmission(bonx_starbase, "IT IS NOW FULLY ARMED!");
 		comms_transmission(bonx_starbase, "TIME IS SURELY RUNNING OUT, PLEASE SET");
 		comms_transmission(bonx_starbase, "A HEADING FOR " .. bonxname .. " IMMEDIATELY!");
 		comms_transmission(bonx_starbase, station .. " SHOULD BE ON THE DAY-SIDE BY THE");
@@ -517,7 +518,7 @@ function distress_call2()
 end
 
 function distress_call3()
-	text_to_speech(player_ids[1], "Incoming transmission from Icarus station");
+	text_to_speech(player_ids[1], "Incoming transmission from "..station);
 	comms_transmission(bonx_starbase, "------------------");
 	comms_transmission(bonx_starbase, "THIS IS ADMIRAL ANTON HALEY");
 	if player_has_bomb(player_ids[1]) then
@@ -546,7 +547,7 @@ function bomb_attached_oid()
 	--still "hidden" on the base
 	--ejected from the base, but floating
 	--in the cargo hold of novus
-	--reejected into space
+	--re-ejected into space
 	--TODO: after writing this, refactor detonation and victim evaluation functions to use it.
 end
 
@@ -608,6 +609,8 @@ function send_in_the_zarkons()
 		ai_push_attack(zarkon_ship[i], player_ids[1]);
 		zy = zy + 250;
 	end
+	comms_transmission(zarkon_ship[1], "INTERLOPERS! YOU SHALL REGRET YOUR INTERFERENCE!"); 
+	comms_transmission(zarkon_ship[1], "WE WILL SHOW NO QUARTER, AND OUR PLAN WILL NOT BE FOILED!"); 
 	text_to_speech(player_ids[1], "Warning, Zarkon scanning beam has been detected.");
 	-- Mess up the player's warp drive to make it harder to run away
 	set_player_damage(player_ids[1], "warp", 255); -- 3 times because of the way
@@ -617,8 +620,13 @@ function send_in_the_zarkons()
 end
 
 -- Look into reversing this: zarkons attempt to prevent you from obtaining the bomb, but then they are terrified and run away from you once you have it.
--- check to see if the space bomb has been acquired and if so send in the zarkons
+-- or maybe even more dramatic, a large, overwhelming squadron threatens, 
+-- but then, suddenly /most/ of them chicken out and flee, leaving only one (but big, intimidating) ship behind, 
+-- and whose commander we overhear raging and insulting his cowardly, deserting commrades. 
+-- then he turns his attention and rage on stopping the heroes.
+
 function check_for_zarkon_attack()
+	-- check to see if the space bomb has been acquired and if so send in the zarkons
 	print("checking for zarkon attack");
 	if not player_has_bomb(player_ids[1]) then
 		print("No zarkon attack this time");
@@ -626,8 +634,8 @@ function check_for_zarkon_attack()
 		register_timer_callback("check_for_zarkon_attack", zarkon_check_interval, 0);
 		return;
 	end
-	-- player has bomb, send in the zarkons
-	send_in_the_zarkons();
+	-- player has bomb, send in the zarkons (after a small delay)
+	register_timer_callback("send_in_the_zarkons", 10 * 6, 0);
 	-- do not register the callback to check for zarkon attack again
 end
 
@@ -652,7 +660,7 @@ create_asteroid_field(50, scybonx, scybony, scybonz, 500000);
 -- Create our macguffin -- a SuberBomb, eventually to be contained in cargocontainer
 -- Since the superbomb commodity is carefully hidden on the station, don't add it 
 -- to inventory or otherwise spawn YET. First, require the player to be docked/in-proximity 
--- at the station, THEN yield/enable the highres scan button to SCIENCE
+-- at the station, THEN yield/enable the high-res scan button to SCIENCE
 -- and only after the scan, and/or communication thereof add the bomb to the station inventory 
 -- or eject it
 active_superbomb = add_commodity("ARMED SUPERBOMB", "SEALED UNIT", "RADIOACTIVE COMPOSITE",
@@ -674,29 +682,44 @@ function hires_scan_callback(pid,screenid)
 	--TODO: conditional on sb-01 is selected, else respond in some other random interesting-ish way
 	--TODO: conditional on sensor powerlevel at max, else make a failure-but-try-again apparent somehow
 	--todo: some kind of high-energy wind up/signal noise--play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
-	--It would be better if we can see what we have selected /right now/. 
-	--Rewrite the condition if we find a way.
-	--For now, we will just be just be satisfied with "have they every selected it at least temporarily"
-	if (bonx_starbase_has_been_selected) then
-		play_sound(player_ids[1], "sounds/ui29.ogg");
-		--TODO: experiment with a little loop or chain of callbacks to get bleep-pause-show-bleep-pause-show-etc for each major line item of info.
-		-- The text is pretty long, no autowrap. Embedded newlines work though! Still an upward limit on total characters.
-		--attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nENERGETICS: NUCLEAR REACTOR CORE DETECTED\n  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n  2 SHUTTLECRAFT DETECTED IN LOWER BAYS.\n  257 LIFEFORMS DETECTED.\nWARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n  LOCATION: DECK 17, WATER TREATMENT PLANT");
-		attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
-			"ENERGETICS: NUCLEAR REACTOR DETECTED\n"..
-			"  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
-			"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
-			"WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n"..
-			"  LOCATION: DECK 17, H2O TREATMENT PLANT");
-		play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
-	else
+	--maybeTODO: have an alternate dummy "hi res" scan sci text, if player scans other non-game-important things?
+	if get_player_damage(player_ids[1], "sensors") > 50 then
 		play_sound(player_ids[1], "sounds/ui9.ogg");
+		text_to_speech(player_ids[1], "High resolution scanners non-operational. Repairs required.");
+	elseif get_ship_attribute(id, "power_data.sensors.i") < 200 then
+		play_sound(player_ids[1], "sounds/ui9.ogg");
+		text_to_speech(player_ids[1], "Insufficient power for high resolution scann.");
+	else
+		--It would be better if we can see what we have selected /right now/. 
+		--Rewrite the condition if we find a way.
+		--For now, we will just be just be satisfied with "have they every selected it at least temporarily"
+		if bonx_starbase_has_been_selected then
+			if object_distance(player_ids[1], bonx_starbase) > 2000 then
+				play_sound(player_ids[1], "sounds/ui9.ogg");
+				text_to_speech(player_ids[1], "Station out of range for high resolution scan.");
+			else
+				--Might also be nice to throw in some SCI scanning powerlevels checks, and/or SRS/LRS check
+				play_sound(player_ids[1], "sounds/ui29.ogg");
+				--TODO: experiment with a little loop or chain of callbacks to get bleep-pause-show-bleep-pause-show-etc for each major line item of info.
+				-- The text is pretty long, no autowrap. Embedded newlines work though! Still an upward limit on total characters.
+				--attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nENERGETICS: NUCLEAR REACTOR CORE DETECTED\n  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n  2 SHUTTLECRAFT DETECTED IN LOWER BAYS.\n  257 LIFEFORMS DETECTED.\nWARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n  LOCATION: DECK 17, WATER TREATMENT PLANT");
+				attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
+					"ENERGETICS: NUCLEAR REACTOR DETECTED\n"..
+					"  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
+					"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
+					"WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n"..
+					"  LOCATION: DECK 17, H2O TREATMENT PLANT");
+				play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
+			end
+		else
+			play_sound(player_ids[1], "sounds/ui9.ogg");
+		end
+		--TODO: add a "burst" of heat to sensors? should have asked for extra cooling from ENGINEERING!
+		--and/or disable the sensors temporarily for recharge/refresh, but make it longer if heat is in the orange.
+		--disable_custom_button(player_ids[1], 4); --< if we don't use that, we probably need a flag for recharging state
+		set_custom_button_label(player_ids[1], 4, "RECHARGING");
+		register_timer_callback("hires_scan_recharged_callback", 80, 0);
 	end
-	--TODO: add a "burst" of heat to sensors? should have asked for extra cooling from ENGINEERING!
-	--and/or disable the sensors temporarily for recharge/refresh, but make it longer if heat is in the orange.
-	--disable_custom_button(player_ids[1], 4); --< if we don't use that, we probably need a flag for recharging state
-	set_custom_button_label(player_ids[1], 4, "RECHARGING");
-	register_timer_callback("hires_scan_recharged_callback", 80, 0);
 end
 
 function hires_scan_recharged_callback()

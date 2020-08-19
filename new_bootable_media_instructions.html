@@ -18,7 +18,7 @@
 <p><b>Instructions for creating a Live DVD image to run the game</b>
 </p>
 <ol>Summary
-	<li>Fresh Install Linux Mint 18 </li>
+	<li>Fresh Install Linux Mint 20 </li>
 	<li>Prerequisite package installations </li>
 	<li>SNIS source code retrieval from Github</li>
 	<li>SNIS build from source</li>
@@ -28,26 +28,26 @@
 	<li>Burn/copy/cast/press freshly created image to bootable media</li>
 </ol>
 
-<p>
-	Warning: if this trashes your hard drive, you're on your own.  This procedure
-	worked for me, but you assume all risk and responsibility for the safety of your data. Partially based on instructions found at https://community.linuxmint.com/tutorial/view/1784
-and https://wiki.debian.org/ReduceDebian
+<p>Warning: if this trashes your hard drive, you're on your own.  This procedure worked for me, 
+	but you assume all risk and responsibility for the safety of your data. Partially based on instructions found at https://community.linuxmint.com/tutorial/view/1784
+	and https://wiki.debian.org/ReduceDebian
 </p>
-<p>These instructions assume you have a Mint 18 linux distribution installed and running to create the bootable ISO image.  You can use Virtualbox and install linux Mint 18 on the virtual machine to make the ISO, then when you're done, you can trash the virtual machine.  Linux Mint 18 ISO can be found at the <a href="https://linuxmint.com/download.php">Linux Mint download page</a>.
+<p>These instructions assume you have a Mint 20 linux distribution installed and running to create the bootable ISO image.  You can use Virtualbox and install linux Mint 20 on the virtual machine to make the ISO, then when you're done, you can trash the virtual machine.  Linux Mint 20 ISO can be found at the <a href="https://linuxmint.com/download.php">Linux Mint download page</a>. There are a few minor Mint distribution variations; though it probably will not matter much, tthese instructions assume the 64-bit MATE variation.
 </p>
-<p> For convenience, consider creating a user "snis" with password "snis" and making it an auto-logon user during OS install.
+<p>For convenience, consider creating a user "snis" with password "snis" and making it an auto-logon user during OS install.
 </p>
 
 <ol>
-	<li> Boot into freshly installed Linux Mint desktop</li>
+	<li>Boot into freshly installed Linux Mint desktop</li>
+	<li>Use MintUpdate or preferred synaptic package manager interface to patch and update software.</li>
 	<li>
 		<pre class="console">
 #Optional trimming
-sudo apt-get remove mono-runtime-common gnome-orca cupsys*
-sudo apt-get remove thunderbird*
-sudo apt-get remove libreoffice*
-sudo apt-get remove mint-backgrounds-sarah mint-backgrounds-serena mint-backgrounds-sonya mint-backgrounds-sylvia
-sudo apt-get remove mint-x-icons
+<!-- sudo apt-get remove mono-runtime-common gnome-orca cupsys* -->
+sudo apt-get remove gnome-orca 
+sudo apt-get remove thunderbird* libreoffice* mythes-*
+sudo apt-get remove mint-backgrounds*
+sudo apt-get remove mint-x-icons mint-y-icons
 		</pre>
 
 	</li>
@@ -76,7 +76,7 @@ sudo apt-get remove mint-x-icons
 	</li>
 	<li><p>Once SNIS build is complete, resume here:
 		</p>
-		After you exit from the game client in quickstart.sh, server may still be running.
+		After you exit from the game client, server may still be running. Use snis_launcher menu to exit the remaining processes, and/or:
 		<pre class="console">
 cd Games/space-nerds-in-space
 ./killem.sh
@@ -86,10 +86,11 @@ cd Games/space-nerds-in-space
 		<pre class="console">
 curl -LO https://apod.nasa.gov/apod/image/1406/hud2014_1280.jpg
 mv hud2014_1280.jpg ~/Pictures
-gsettings set org.cinnamon.desktop.background picture-uri  "file:///$HOME/Pictures/hud2014_1280.jpg"
-cp /usr/share/pix/icons/hicolor/22x22/actions/browser-mode.png /usr/lib/linuxmint/mintMenu/mintMenu.png
+<!--gsettings set org.cinnamon.desktop.background picture-uri  "file:///$HOME/Pictures/hud2014_1280.jpg"-->
+gsettings set org.mate.background picture-filename "/$HOME/Pictures/hud2014_1280.jpg"
+sudo cp /usr/share/pix/icons/hicolor/22x22/actions/browser-mode.png /usr/lib/linuxmint/mintMenu/mintMenu.png
 
-sed -i 's/^/SNIS Live (based on/' /etc/issue
+sudo sed -i 's/^ *Linux/SNIS Live (based on Linux /' /etc/issue
 echo ')' &gt;&gt; /etc/issue
 
 cat &lt;&lt;__EOF__&gt;~/Desktop/SNIS_Client.desktop
@@ -97,7 +98,7 @@ cat &lt;&lt;__EOF__&gt;~/Desktop/SNIS_Client.desktop
 Version=1.0
 Type=Application
 Terminal=false
-Exec=/home/snis/Games/space-nerds-in-space/bin/snis_client --fulscreen
+Exec=/home/snis/Games/space-nerds-in-space/bin/snis_client --fullscreen
 Path=/home/snis/Games/space-nerds-in-space/
 Name=SNIS Client
 Comment=Space Nerds in Space Game client
@@ -128,9 +129,12 @@ apt-get install squashfs-tools genisoimage
 	</li>
 	<li> Now clean up the game environment before we prepare the disk image (and yes aptitude takes the weird tilde options for some reason):
 		<pre class="console">
+rm ~snis/.cache/*
 aptitude purge ~c
 aptitude unmarkauto ~M
 apt-get clean; rm -rf /var/cache/debconf/*.dat-old; rm -rf /var/lib/aptitude/*.old; rm -rf /var/lib/dpkg/*-old; rm -rf /var/cache/apt/*.bin; updatedb
+rm /var/lib/dbus/machine-id
+journalctl --vacuum-time=1h
 history -c
 rm /root/.bash_history
 rm /root/.nano_history
@@ -139,16 +143,17 @@ rm ~snis/.nano_history
 history -c
 		</pre>
 	</li>
-	<li> Download the <a href="https://www.linux-live.org/">Linux Live Kit to /tmp</a> and extract.
+	<li>Create a special LINUXLIVEKIT directory directly under the root directory and into it download the <a href="https://www.linux-live.org/">Linux Live Kit</a> (latest release <a href="https://github.com/Tomas-M/linux-live/releases/latest">on Github</a>) and extract.
 		<pre class="console">
 sudo mkdir /LINUXLIVEKIT
 sudo chown snis /LINUXLIVEKIT
 cd /LINUXLIVEKIT
 curl -LO https://github.com/Tomas-M/linux-live/tarball/master
 ls -lF
+mv master master.gz
 gunzip *gz
-tar xvf *.tar
-cd linux-live*
+tar xvf master
+cd Tomas*linux-live*
 		</pre>
 	</li>
 	<li>
@@ -156,8 +161,11 @@ cd linux-live*
 		</p>
 		<pre class="console">
 sed -i 's/^LIVEKITNAME="linux"/LIVEKITNAME="SNISlinux"/' config
+sed -i 's/^VMLINUZ=\/vmlinuz/VMLINUZ=\/boot\/vmlinuz/' config
+
 sudo ./tools/isolinux.bin.update
 		</pre>
+		<li>enter <pre class="console">/boot </pre> when prompted for isolinux search path additions.</li>
 	</li>
 	<li>Now build filesystem and generate ISO image, which will take a while:
 		<pre class="console">

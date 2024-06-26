@@ -211,7 +211,7 @@ end
 function eject_superbomb_from_starbase(starbase_number)
 	--Optional unlock/disengagement something check here? or similar safe-to-receive condition (else boom)
 	--TRANSMISSION: WEVE EJECED THAT DAMN THI*NG! GET IT OUTTA HERE!
-	--TODO: effect: particles or other for hasty airlock blow (ejecting the bomb)
+	--TODO: effect: particles or other for hasty airlock blow (ejecting the bomb) , maybe spinny red/amber warning lights
 	text_to_speech(player_ids[1], "Incoming transmission from "..station);
 	comms_transmission(starbase_number, "------------------");
 	comms_transmission(starbase_number, "DOOMSDAY DEVICE SECURED IN A CRYO-CARGO CONTAINER FOR SAFER STOWAGE.");
@@ -220,7 +220,7 @@ function eject_superbomb_from_starbase(starbase_number)
 	ex,ey,ez = get_object_location(starbase_number);
 	ejectedcargocontainer = add_cargo_container(ex + 150, ey + 100, ez + 000, 2, 0, 0);
 	set_commodity_contents(ejectedcargocontainer, active_superbomb, 1);
-	attach_science_text(ejectedcargocontainer, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nTHERMAL: HIGH, VARYING\nDENSITY: [ANOMALOUS] 188g/cc\n\nWARNING: ANTI-NEUTRINO EMITTING MASS DETECTED IN CENTER OF MASS.\nEMISSION AND MASS SIGNATURE MATCHES DOOMSDAY DEVICE ATTRIBUTES.");
+	attach_science_text(ejectedcargocontainer, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\nTHERMAL: HIGH, VARYING\nDENSITY: [ANOMALOUS] 188g/cc\n\nWARNING: ANTI-NEUTRINO EMITTING MATTER DETECTED IN CENTER OF MASS.\nEMISSION AND MASS SIGNATURE MATCHES DOOMSDAY DEVICE ATTRIBUTES.");
 	return ejectedcargocontainer;
 end
 
@@ -723,6 +723,7 @@ register_callback("player-warp-travel-event", "player_warped_callback");
 
 
 function hires_scan_callback(pid,screenid)
+	print(" '--sensor r2="..get_ship_attribute(player_ids[1],"power_data.sensors.r2"));
 	--TODO: conditional on sb-01 is selected, else respond in some other random interesting-ish way
 		-- but since there isn't a get-current-selection function, do this instead: register call back for object-scanned-event and iff it is sb-01, then set a 2-minute timer in which the hires scan will be considered targeted on sb-01 (and thus check passes). But combine with a proximity check, too. Must be less than 10k or maybe in orbit/docked even.
 	--todo: some kind of high-energy wind up/signal noise--play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
@@ -730,38 +731,44 @@ function hires_scan_callback(pid,screenid)
 	if get_player_damage(player_ids[1], "sensors") > 50 then
 		play_sound(player_ids[1], "sounds/ui9.ogg");
 		text_to_speech(player_ids[1], "High resolution scanners non-operational. Repairs required.");
-	elseif get_ship_attribute(id, "power_data.sensors.r2") < 200 then
+	elseif get_ship_attribute(player_ids[1], "power_data.sensors.r2") < 200 then
 		play_sound(player_ids[1], "sounds/ui9.ogg");
 		text_to_speech(player_ids[1], "Insufficient power for high resolution scan. Increase Sensor Power.");
-		print(" '--sensor r2="..get_ship_attribute(id,"power_data.sensors.r2"));
 	else
 		--It would be better if we can see what we have selected /right now/. 
 		--Rewrite the condition if we find a way.
 		--For now, we will just be just be satisfied with "have they every selected it at least temporarily"
 		if bonx_starbase_has_been_selected then
-			if object_distance(player_ids[1], bonx_starbase) > 2000 then
+			if object_distance(player_ids[1], bonx_starbase) > 2200 then
 				play_sound(player_ids[1], "sounds/ui9.ogg");
 				text_to_speech(player_ids[1], "Station out of range for high resolution scan.");
 			else
 				--Might also be nice to throw in some SCI scanning powerlevels checks, and/or SRS/LRS check
 				play_sound(player_ids[1], "sounds/ui29.ogg");
-				--TODO: experiment with a little loop or chain of callbacks to get bleep-pause-show-bleep-pause-show-etc for each major line item of info.
+				--TODO: experiment with a little loop or chain of callbacks to get bleep-pause-show-bleep-pause-show-etc for each major line item of info. Maybe a final alarm, too.
 				-- The text is pretty long, no autowrap. Embedded newlines work though! Still an upward limit on total characters.
-				--attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
-				--		"ENERGETICS: NUCLEAR REACTOR CORE DETECTED\n"..
-				--		"  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
-				--		"  2 SHUTTLECRAFT DETECTED IN LOWER BAYS.\n  257 LIFEFORMS DETECTED.\n"..
-				--		"WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n  LOCATION: DECK 17, WATER TREATMENT PLANT");
 				attach_science_text(bonx_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
 					"ENERGETICS: NUCLEAR REACTOR DETECTED\n"..
-					"  LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
+					"  '- LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
 					"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
-					"WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!!\n"..
-					"  LOCATION: DECK 17, H2O TREATMENT PLANT");
+					" >> WARNING: ANTI-NEUTRINO EMITTING MASS DETECTED!! <<\n"..
+					"   '- LOCATION: DECK 17, H2O TREATMENT PLANT");
 				play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
 			end
 		else
-			play_sound(player_ids[1], "sounds/ui9.ogg");
+			play_sound(player_ids[1], "sounds/science-data-acquired.ogg");
+			attach_science_text(tobbrax_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
+				"ENERGETICS: NUCLEAR REACTOR DETECTED\n"..
+				"  '- LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
+				"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
+				"LIFESUPPORT: ACTIVE\n"..
+				"  NOMINAL");
+			attach_science_text(scybon_starbase, "COMPOSITION: STANDARD METALLICS, COMPOSITES.\n"..
+				"ENERGETICS: NUCLEAR REACTOR DETECTED\n"..
+				"  '- LOCATION: UPPER CENTER, NOMINAL RADIATION.\n"..
+				"SHUTTLECRAFT DETECTED IN LOWER BAYS.\n\n"..
+				"LIFESUPPORT: ACTIVE\n"..
+				"  NOMINAL");
 		end
 		--TODO: add a "burst" of heat to sensors? should have asked for extra cooling from ENGINEERING!
 		--and/or disable the sensors temporarily for recharge/refresh, but make it longer if heat is in the orange.

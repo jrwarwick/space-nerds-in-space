@@ -177,14 +177,20 @@ apt_install_package()
 	p="$1"
 	dbgout "Executing sudo apt install $1"
 	set -o pipefail
+	local PREVPKG="$p"
 	$DRYRUN sudo apt install "$1" 2>&1 | tee /tmp/aptempt.txt
 	if [ $? -eq 100 ] ; then
 		tail /tmp/aptempt.txt | grep 'has no installation candidate'
 		if [ $? -eq 0 ] ; then
-			echo "  Virtual package default resolution..."
+			echo "  Automatic virtual package default candidate selection..."
 			PKGSPEC=$(tail /tmp/aptempt.txt | egrep -v '^E:|^\s*$' | tail -1 | sed -e 's/^\s*//' -e 's/\s\+.*$//')
-			echo "  sudo apt install \"$PKGSPEC\" "
-			apt_install_package "$PKGSPEC"
+			#Guard against getting into a loop
+			if [ "$PREVPKG" != "$PKGSPEC" ] ; then
+				echo "  sudo apt install \"$PKGSPEC\" "
+				apt_install_package "$PKGSPEC"
+			else
+				return 1
+			fi
 		fi
 	fi
 	return $?

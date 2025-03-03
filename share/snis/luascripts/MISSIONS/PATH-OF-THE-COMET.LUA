@@ -22,6 +22,12 @@
 --silver medal: all crew somehow evacuated from ship before obliteration
 --once pirates appear, either destroy them, negotiate surrender, or disable and drag to star base
 
+-- Path of the Comet mission segue/appendix: on completion a space pirate pops out of nowhere to capture/kill.
+--   if you kill them, you get a "Bounty Remittance Chit" (as custom commodity)
+--	https://github.com/smcameron/space-nerds-in-space/blob/92f787f940d3659612aaaff54a74cd79c2440074/doc/lua-api.txt#L634
+
+
+--TOOD: can we get a skybox with a binary SUN + pulsar sort of like crab nebula, and/or create a "lighthouse effect" pulsar emission. It would be cool extra for science to have some gamma detector event or something.
 
 -- First, clear the board
 clear_all();
@@ -72,6 +78,17 @@ nebula[10] = add_nebula("", 491089.060759, 0.000000, 517776.881772, 871.000000);
 nebula[11] = add_nebula("", 489658.266534, 0.000000, 519207.675997, 1545.000000);
 nebula[12] = add_nebula("", 491446.759036, 0.000000, 515272.993834, 4748.000000);
 nebula[13] = add_nebula("", 493592.949814, 0.000000, 512411.405385, 3617.000000);
+
+
+##TODO: make this more comet-y . can we get custom texture with emission? particles? tail?
+## calculate path and put the victim ship right in it.
+## TODO:  generate_name()
+
+comet = add_asteroid(1000.0, 1000.0, 10000.0);
+set_asteroid_speed(comet, 27.0);
+set_asteroid_minerals(comet, 85.0, 12.0, 2.0, 1.0);
+attach_science_text(comet, "CONVENTIONAL COMPOSITION COMET COMPOSED MOSTLY OF H2O, SILICATE, CARBON COMPOSITION. HIGH-PURITY CRYSTALLINE STRUCTURE. REGISTERED WITH MANY GALACTIC DATABASES.")
+
 
 function add_adjusted_asteroid(x, y, z)
   return add_asteroid(adjx + x, y, adjz + z);

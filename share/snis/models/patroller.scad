@@ -1,4 +1,4 @@
-$fn = 8; //$preview ? 8 : 12;
+$fn = 12; //$preview ? 8 : 12;
 
 // Skews the child geometry.
 // xy: Angle towards X along Y axis.
@@ -21,8 +21,8 @@ module skew(xy = 0, xz = 0, yx = 0, yz = 0, zx = 0, zy = 0) {
 // Define the main body of the starship
 module main_body() {
     hull() {
-        translate([0, 0, 0]) cylinder(h=20, r1=5, r2=5);
-        translate([0, 0, 20]) sphere(r=5);
+        translate([0, 0, 0]) cylinder(h=22, r1=5, r2=5);
+        translate([0, 0, 22]) sphere(r=5);
     }
     //anterior ring
     translate([0, 0, -1.25])
@@ -44,15 +44,28 @@ module engines() {
     $fn=6;
     translate([-5, -3.75, 0]) cylinder(h=10, r=2.5);
     translate([5, -3.75, 0]) cylinder(h=10, r=2.5);
+        translate([5, -3.75, 0]) cylinder(h=10, r=2.5);
 }
 
 // Define the thruster at the back of the starship
 //TODO: triple it and shorten it
 module thruster() {
-    translate([0, 0, -3.5]) cylinder(h=3.5, r1=3, r2=1.75);
+    translate([0, 0, -3.75]) cylinder(h=3.75, r1=3.25, r2=2);
 }
 
 // Define the nacelles at the ends of the wings
+//translate([8,8,8]) {
+module scoop() {
+    difference() {
+        difference() {
+            cylinder(h=7, r=2.4);
+            cylinder(h=7, r=1.85);
+        }
+        translate([-1.5,-3.75,5])
+        rotate([30,0,30])
+        cube(size=6.75);
+    }
+}
 module nacelles() {
     translate([-10, 0, 10]) cylinder(h=10, r=2);
     translate([10, 0, 10]) cylinder(h=10, r=2);
@@ -60,7 +73,10 @@ module nacelles() {
     translate([-8.75, .5, 2.25]) cylinder(h=10, r=1);
     //translate([10, 0, 15]) cylinder(h=10, r=1);
     translate([8.75, .5, 2.25]) cylinder(h=10, r=1);
+    translate([10,0,16]) scoop();
+    translate([-10,0,16]) mirror([1,0,0])scoop();
 }
+
 
 // Define the cockpit/bridge extrusion as a trapezoid
 module cockpit() {

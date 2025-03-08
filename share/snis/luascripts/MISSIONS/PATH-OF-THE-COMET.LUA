@@ -17,8 +17,10 @@
 -- sector and/or make the jump to hyperspace), a rickety pirate ship sent as insurance
 -- appears and tries to finish the job. But interesting, there is a clue left behind...
 
---solutions: dock with ship, send repair crew < remote repiar minigame > it flies off on its own
---tractor beam tug to within 2000 of star base
+--solutions: 
+-- * dock with ship, send repair crew < remote repiar minigame > it flies off on its own
+-- * tractor beam tug to within 2000 of star base
+-- * "split" the comet in half with a direct torpedo hit w/ MAX Power or something. But this will result in a demerit for destroying a galactic national treasure (imagine saving some people by damaging mount rushmore) in this case, remove the main comet, and replace with two smaller comets traveling in 45degree divergent paths.
 --silver medal: all crew somehow evacuated from ship before obliteration
 --once pirates appear, either destroy them, negotiate surrender, or disable and drag to star base
 
@@ -80,9 +82,9 @@ nebula[12] = add_nebula("", 491446.759036, 0.000000, 515272.993834, 4748.000000)
 nebula[13] = add_nebula("", 493592.949814, 0.000000, 512411.405385, 3617.000000);
 
 
-##TODO: make this more comet-y . can we get custom texture with emission? particles? tail?
-## calculate path and put the victim ship right in it.
-## TODO:  generate_name()
+--#TODO: make this more comet-y . can we get custom texture with emission? particles? tail?
+-- calculate path and put the victim ship right in it.
+--#TODO:  generate_name()
 
 comet = add_asteroid(1000.0, 1000.0, 10000.0);
 set_asteroid_speed(comet, 27.0);
@@ -376,26 +378,29 @@ ship[5] = add_adjusted_ship("EARLY VOLCAN", 493499.048677, 9168.428938, 401921.0
 ship[6] = add_adjusted_ship("MOONGRAZER STARRY", 97328.043113, 4472.681873, 157359.406679, 0, 4, 1);
 ship[7] = add_adjusted_ship("VOIDSKY CHARMANT", 351632.896082, -1511.276634, 89060.698671, 0, 4, 1);
 ship[8] = add_adjusted_ship("EKITH STARLIGHT", 347578.872766, 933.497703, 86533.115505, 0, 1, 1);
-ship[9] = add_adjusted_ship("GOLDEN VALIANT", 500564.792527, -2652.311668, 404864.344184, 0, 1, 1);
+ship[9] = add_adjusted_ship("GSS VIGILANT", 500564.792527, -2652.311668, 404864.344184, 0, 1, 1);
 ship[10] = add_adjusted_ship("VOLARE TARANTULA", 352284.867481, -1873.216279, 89009.938401, 0, 1, 1);
 ship[11] = add_adjusted_ship("WOLF FARTHER", 84026.415666, -42683.215038, 510490.640857, 0, 1, 1);
 ship[12] = add_adjusted_ship("PANZER GALAXIE", 352458.312716, -2601.115895, 89251.531682, 0, 1, 1);
-ship[13] = add_adjusted_ship("STARLIGHT UDI", 353504.401276, -2510.871417, 89421.806518, 0, 1, 1);
-ship[14] = add_adjusted_ship("CETUS WALRUS", 97575.692315, -5255.451327, 154526.856703, 0, 2, 1);
-ship[15] = add_adjusted_ship("CARINA ARROW", 89480.063836, -46116.896404, 510552.053472, 0, 1, 1);
-ship[16] = add_adjusted_ship("STARMAN ESHA", 494325.450916, 3218.481950, 388399.806626, 0, 1, 1);
-ship[17] = add_adjusted_ship("VOLARE MONTAGNE", 493936.119452, 15888.617153, 396814.877853, 0, 1, 1);
-ship[18] = add_adjusted_ship("ZIZOU SHINING", 452159.624659, -89.632015, 265230.705154, 0, 0, 1);
-ship[19] = add_adjusted_ship("MOONGRAZER SILENCIO", 117074.624453, 331.365723, 152440.053153, 0, 0, 1);
-ship[20] = add_adjusted_ship("HIGH PHOTON", 351669.391922, -73.167909, 86108.323492, 0, 3, 1);
-ship[22] = add_adjusted_ship("BONZAAR KARNACH", 352531.392261, -2633.297044, 89513.144837, 0, 3, 1);
-ship[23] = add_adjusted_ship("PLANET STARGAZER", 351431.961135, -1916.420355, 89547.890154, 0, 4, 1);
-ship[24] = add_adjusted_ship("ANDROMEDA STUK", 84053.913054, -50270.492810, 513317.501757, 0, 2, 1);
-ship[25] = add_adjusted_ship("GSS VIGILANT", 493526.817183, -5346.606139, 367739.505930, 0, 0, 1);
-ship[26] = add_adjusted_ship("STARLINK FESTU", 353236.899500, -2700.641421, 91513.186709, 0, 2, 1);
+----ship[13] = add_adjusted_ship("STARLIGHT UDI", 353504.401276, -2510.871417, 89421.806518, 0, 1, 1);
+----ship[14] = add_adjusted_ship("CETUS WALRUS", 97575.692315, -5255.451327, 154526.856703, 0, 2, 1);
+----ship[15] = add_adjusted_ship("CARINA ARROW", 89480.063836, -46116.896404, 510552.053472, 0, 1, 1);
+----ship[16] = add_adjusted_ship("STARMAN ESHA", 494325.450916, 3218.481950, 388399.806626, 0, 1, 1);
+----ship[17] = add_adjusted_ship("VOLARE MONTAGNE", 493936.119452, 15888.617153, 396814.877853, 0, 1, 1);
+----ship[18] = add_adjusted_ship("ZIZOU SHINING", 452159.624659, -89.632015, 265230.705154, 0, 0, 1);
+----ship[19] = add_adjusted_ship("MOONGRAZER SILENCIO", 117074.624453, 331.365723, 152440.053153, 0, 0, 1);
+----ship[20] = add_adjusted_ship("HIGH PHOTON", 351669.391922, -73.167909, 86108.323492, 0, 3, 1);
+----ship[22] = add_adjusted_ship("BONZAAR KARNACH", 352531.392261, -2633.297044, 89513.144837, 0, 3, 1);
+----ship[23] = add_adjusted_ship("PLANET STARGAZER", 351431.961135, -1916.420355, 89547.890154, 0, 4, 1);
+----ship[24] = add_adjusted_ship("ANDROMEDA STUK", 84053.913054, -50270.492810, 513317.501757, 0, 2, 1);
 attacker = add_adjusted_ship("SILENT SCORPION", 1000, 1000, 1000, 18, 3, 0);
+--TODO: make a few of the ships obvious sight-seeing tourist ships. bloated, slow and benign. And appropriate naming and flagging.
 
-macguffin = add_commodity("ELECTRONICS", "SEX ROBOTS", "UNITS", "SEX ROBOTS", 10000.0, 0.1, 0.2, 0);
+--This is a mass assassination contract, and/or a kind of letter of marque, it is binding and legitimate, so to speak, 
+--but morally dubious and offensive to pretty much everyone else except the entering parties.
+--it inicriminates the issuer in our situation.
+--#TODO: don't spawn until the pirate ship is destroyed.
+macguffin = add_commodity("PAPER", "CONTRACT", "DOCUMENT", "HIGH GRADE PAPER", 1000.0, 0.1, 0.2, 0);
 container = add_cargo_container(adjx + 499673, 0, adjz + 509549);
 set_object_velocity(container, 0, 0, 0);
 set_commodity_contents(container, macguffin, 50);
@@ -407,6 +412,9 @@ if (player_ids[1]) then
 	move_object(player_ids[1], adjx + 87395, -36122, adjz + 507192);
 	dock_player_to_starbase(player_ids[1], starbase[1]);
 end
+
+-- OPTIONAL: nearly exhaust the player's fuel and put them pretty close to the Interplanetary Regional Council star base under control of the Neutral Zone Directorate 
+-- they can fuel up and also recieve exposition.
 
 first_channel = 1000 + math.random(8000)
 cargo_acquired = 0;
@@ -442,19 +450,23 @@ end
 
 function reminder1_listener(from, channel, message)
   comms_channel_unlisten("GSS VIGILANT", channel);
-  comms_channel_transmit("GSS VIGILANT", channel, ": AHOY!");
+  comms_channel_transmit("GSS VIGILANT", channel, ": HELLO ONCE AGAIN!");
   comms_channel_transmit("GSS VIGILANT", channel, ": THIS IS CAPTAIN TROUT OF THE GSS VIGILANT.");
-  comms_channel_transmit("GSS VIGILANT", channel, ": JUST REMINDING YOU TO DELIVER ON TIME . . . OR ELSE.");
-  comms_channel_transmit("GSS VIGILANT", channel, ": YOU DO NOT WANT TO BE REMINDED A SECOND TIME.");
+  comms_channel_transmit("GSS VIGILANT", channel, ": JUST REMINDING YOU TO ATTEND THE MEETING ON TIME");
+  comms_channel_transmit("GSS VIGILANT", channel, ": YOUR PRESENCE IS REALLY QUITE NECESSARY.");
+  comms_channel_transmit("GSS VIGILANT", channel, ": HOPEFULLY NOTHING UNTOWARD HAPPENS, BUT");
+  comms_channel_transmit("GSS VIGILANT", channel, ": KEEP A WARY EYE OUT.");
   comms_channel_transmit("GSS VIGILANT", channel, ": TROUT OUT.");
 end
 
 function reminder2_listener(from, channel, message)
   comms_channel_unlisten("GSS VIGILANT", channel);
-  comms_channel_transmit("GSS VIGILANT", channel, ": AHOY!");
+  comms_channel_transmit("GSS VIGILANT", channel, ": HELLO FROM THE VIGILANT.");
   comms_channel_transmit("GSS VIGILANT", channel, ": THIS IS CAPTAIN TROUT OF THE GSS VIGILANT.");
-  comms_channel_transmit("GSS VIGILANT", channel, ": YOU HAVE FAILED TO DELIVER THE PACKAGE IN A TIMELY");
-  comms_channel_transmit("GSS VIGILANT", channel, ": MANNER. GOODBYE . . . FOREVER.");
+  comms_channel_transmit("GSS VIGILANT", channel, ": A TRAGEDY HAS BEFALLEN THE DELEGATION, LIKELY FOUL PLAY.");
+  comms_channel_transmit("GSS VIGILANT", channel, ": HAD YOU BEEN THERE, WAR MIGHT HAVE BEEN AVERTED.");
+  comms_channel_transmit("GSS VIGILANT", channel, ": RETURN TO THE STARBASE TO DEBRIEF. OR DEPART.");
+  comms_channel_transmit("GSS VIGILANT", channel, ": IT DOES NOT REALLY MATTER ANY LONGER.");
   comms_channel_transmit("GSS VIGILANT", channel, ": TROUT OUT.");
   x,y,z = get_object_location(player_ids[1]);
   name = {};
@@ -480,7 +492,9 @@ function cargo_acquired_listener(from, channel, message)
   comms_channel_transmit("GSS VIGILANT", channel, ": AHOY!");
   comms_channel_transmit("GSS VIGILANT", channel, ": THIS IS CAPTAIN TROUT OF THE GSS VIGILANT.");
   comms_channel_transmit("GSS VIGILANT", channel, ": WE HAVE BEEN OBSERVING YOU FROM AFAR AND WE SEE");
-  comms_channel_transmit("GSS VIGILANT", channel, ": THAT YOU HAVE ACQUIRED THE CARGO. EXCELLENT! NOW");
+  comms_channel_transmit("GSS VIGILANT", channel, ": YOU HAVE DISPATCHED THE DASTARDLY PIRATES.");
+  comms_channel_transmit("GSS VIGILANT", channel, ": WELL DONE AND GOOD RIDDANCE. MOREOVER WE SEE");
+  comms_channel_transmit("GSS VIGILANT", channel, ": THAT YOU HAVE ACQUIRED SOME KIND OF JETTISONED MATERIAL.");
   comms_channel_transmit("GSS VIGILANT", channel, ": DELIVER IT TO THE STATION IN ORBIT AROUND ASTU, AND.");
   comms_channel_transmit("GSS VIGILANT", channel, ": DO IT QUICKLY!");
 end
@@ -490,8 +504,10 @@ function package_delivered_listener(from, channel, message)
   comms_channel_transmit("GSS VIGILANT", channel, ": AHOY!");
   comms_channel_transmit("GSS VIGILANT", channel, ": THIS IS CAPTAIN TROUT OF THE GSS VIGILANT.");
   comms_channel_transmit("GSS VIGILANT", channel, ": CONGRATULATIONS, YOU HAVE DELIVERED THE PACKAGE AS");
-  comms_channel_transmit("GSS VIGILANT", channel, ": REQUIRED. YOUR CONSIDERABLE DEBT IS FORGIVEN.");
-  comms_channel_transmit("GSS VIGILANT", channel, ": NOW GET THE HELL OUT OF HERE.");
+  comms_channel_transmit("GSS VIGILANT", channel, ": AND OUR ANALYSTS WILL BEGIN AUTHENTICATING AND");
+  comms_channel_transmit("GSS VIGILANT", channel, ": DECODING IT. FOR NOW, PLEASE CONSIDER ALL OF THIS");
+  comms_channel_transmit("GSS VIGILANT", channel, ": STRICTLY CONFIDENTIAL. I HAVE A FEELING THAT THERE");
+  comms_channel_transmit("GSS VIGILANT", channel, ": IS SOMETHING DANGEROUS AND CONSPIRATORIAL GOING ON.");
   comms_channel_transmit("GSS VIGILANT", channel, ": TROUT OUT.");
 end
 
@@ -568,10 +584,10 @@ register_timer_callback("second_reminder", second_reminder_time, 0);
 register_callback("cargo-container-acquired-event", "cargo_container_acquired");
 register_callback("player-docked-event", "player_docked");
 
-show_timed_text(player_ids[1], 60, "KALI\n" ..
-	". . . HAVING RECENTLY GAMBLED AWAY A TERRIFYING\n" ..
-	"SUM OF MONEY, OUR HEROES FIND THEMSELVES UNABLE\n" ..
-	"TO PAY THEIR STAGGERING DEBT AND ARE FLEEING\n" ..
-	"FROM KNOWN PSYCHO, VARKON KALI AND HIS GANG OF\n" ..
-	"THUGS . . .\n");
+show_timed_text(player_ids[1], 60, "PATH OF THE COMET\n" ..
+	". . . HAVING RECENTLY NEARLY RUN OUT OF FUEL\n" ..
+	"OUR HEROES FIND THEMSELVES RUNNING ON FUMES\n" ..
+	"AND COASTING INTO THE STARBASE NEAREST TO\n" ..
+	"THE WIDELY REVERED INTERSTELLAR TOURISM PARK\n" ..
+	"AND THINGS LOOK BUSY AND STRANGELY TENSE . . .\n");
 

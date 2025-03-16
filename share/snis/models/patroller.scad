@@ -101,22 +101,27 @@ module hatch() {
 }
 
 // Assemble the starship
-module starship() {
-    main_body();
-    hatch();
-    wings();
-    engines();
-    thruster();
-    nacelles();
-    cockpit();
+module patroller() {
+    union() {
+        main_body();
+        hatch();
+        wings();
+        engines();
+        thruster();
+        nacelles();
+        cockpit();
+    }
 }
 
-// Render the starship
-starship();
+// Render the starship, and orient consistent with snis standard
+translate(v = [-8, 0, 0])
+scale(v = [.70, .62, .62])
+	rotate(a = 90, v = [0, 1, 0])
+        patroller();
 
 //Supplemental SNIS special effects
 use <imposter_thrust.scad>;
-thrust_ports = 0;
+thrust_ports = 1;
 if (thrust_ports) {
-	imposter_thrust(0, 0, -4, 1.75);
+	imposter_thrust(-11, 0, 0, 1.1);
 }

@@ -113,3 +113,10 @@ module starship() {
 
 // Render the starship
 starship();
+
+//Supplemental SNIS special effects
+use <imposter_thrust.scad>;
+thrust_ports = 0;
+if (thrust_ports) {
+	imposter_thrust(0, 0, -4, 1.75);
+}
